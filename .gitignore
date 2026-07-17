@@ -17,3 +17,7 @@ frontend/dist/
 *.tsbuildinfo
 
 .vercel
+
+# bench: keep the harness + ground truth + prompts + reports, drop raw caches
+bench/results/cache/
+bench/STOP

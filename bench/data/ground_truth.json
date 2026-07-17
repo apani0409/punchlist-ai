@@ -1,0 +1,86 @@
+{
+  "_comment": "Hand-labeled expected findings per sample photo. A prediction 'hits' a finding when it reports the same trade AND its title+description contains at least one of the finding's keywords. This keeps scoring deterministic (no LLM judge, no extra API cost).",
+  "photos": [
+    {
+      "id": "cracked-wall",
+      "file": "cracked-wall.jpg",
+      "findings": [
+        {
+          "id": "crack",
+          "trade": "concrete",
+          "min_severity": "medium",
+          "keywords": ["crack", "fissure", "split"],
+          "note": "Vertical crack through the wall blocks — the main structural issue."
+        },
+        {
+          "id": "displaced-unit",
+          "trade": "concrete",
+          "min_severity": "low",
+          "keywords": ["displace", "loose", "misalign", "coping", "paver", "block"],
+          "note": "A coping/paver unit sits proud or misaligned at the top of the wall."
+        },
+        {
+          "id": "debris-walkway",
+          "trade": "general",
+          "min_severity": "low",
+          "keywords": ["gravel", "debris", "loose stone", "aggregate", "slip"],
+          "note": "Loose gravel/debris on the walkway is a trip/slip hazard."
+        }
+      ]
+    },
+    {
+      "id": "basement-wiring",
+      "file": "basement-wiring.jpg",
+      "findings": [
+        {
+          "id": "loose-cable",
+          "trade": "electrical",
+          "min_severity": "medium",
+          "keywords": ["cable", "wire", "wiring", "unsecured", "hanging", "loose"],
+          "note": "An unsecured cable/wire hangs loose instead of being routed/fastened."
+        },
+        {
+          "id": "pipe-insulation",
+          "trade": "plumbing",
+          "min_severity": "low",
+          "keywords": ["insulation", "pipe", "stain", "damage", "condensation"],
+          "note": "Damaged or stained pipe insulation on the overhead piping."
+        },
+        {
+          "id": "unfinished-wall",
+          "trade": "paint",
+          "min_severity": "low",
+          "keywords": ["patch", "unfinished", "unpainted", "scuff", "finish"],
+          "note": "Unfinished/unpainted patches on the walls."
+        }
+      ]
+    },
+    {
+      "id": "water-damage-ceiling",
+      "file": "water-damage-ceiling.jpg",
+      "findings": [
+        {
+          "id": "water-stain",
+          "trade": "plumbing",
+          "min_severity": "high",
+          "keywords": ["water", "stain", "leak", "moisture", "damp"],
+          "note": "Water staining indicates an active or past leak from above."
+        },
+        {
+          "id": "peeling-paint",
+          "trade": "paint",
+          "min_severity": "medium",
+          "keywords": ["peel", "paint", "blister", "flak", "delaminat"],
+          "note": "Extensive paint peeling/delamination across the ceiling."
+        },
+        {
+          "id": "drywall-damage",
+          "trade": "drywall",
+          "min_severity": "low",
+          "keywords": ["drywall", "sheetrock", "board", "substrate", "soft"],
+          "note": "The sheetrock/drywall substrate itself may be compromised."
+        }
+      ]
+    }
+  ]
+}
