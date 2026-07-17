@@ -1,20 +1,22 @@
-"""Renders bench/results/log.jsonl into a human-readable bench/REPORT.md."""
+"""Renders a bench run's results/log.jsonl into a human-readable REPORT.md."""
 
 import json
 from pathlib import Path
 
 BENCH_DIR = Path(__file__).parent
-LOG_PATH = BENCH_DIR / "results" / "log.jsonl"
-PROMPTS_DIR = BENCH_DIR / "prompts"
-REPORT_PATH = BENCH_DIR / "REPORT.md"
 
 
-def write_report() -> None:
-    if not LOG_PATH.exists():
-        REPORT_PATH.write_text("# PunchBench Report\n\nNo runs logged yet.\n", encoding="utf-8")
+def write_report(run_dir: Path | None = None) -> None:
+    run_dir = run_dir or BENCH_DIR
+    log_path = run_dir / "results" / "log.jsonl"
+    prompts_dir = run_dir / "prompts"
+    report_path = run_dir / "REPORT.md"
+
+    if not log_path.exists():
+        report_path.write_text("# PunchBench Report\n\nNo runs logged yet.\n", encoding="utf-8")
         return
 
-    entries = [json.loads(line) for line in LOG_PATH.read_text(encoding="utf-8").splitlines()]
+    entries = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
     entries.sort(key=lambda e: e["generation"])
 
     best = max(entries, key=lambda e: e["metrics"]["composite"])
@@ -58,7 +60,7 @@ def write_report() -> None:
             f"{p['false_positives']} false positives, missed: {missed}"
         )
 
-    best_prompt_path = PROMPTS_DIR / f"v{best['generation']}.txt"
+    best_prompt_path = prompts_dir / f"v{best['generation']}.txt"
     lines += [
         "",
         f"## Best prompt (v{best['generation']})",
@@ -78,7 +80,7 @@ def write_report() -> None:
         "  raw accuracy — the production app uses Claude, which scores far higher.",
     ]
 
-    REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

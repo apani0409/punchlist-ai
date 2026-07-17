@@ -60,6 +60,22 @@ npm run dev                                       # http://localhost:5173, proxi
 
 Set `ANTHROPIC_API_KEY` in the backend environment to skip the per-request key, and `PUNCHLIST_MODEL` to override the default model.
 
+## PunchBench: measuring and improving the prompt
+
+Writing a prompt once isn't the same as knowing it's good. [`bench/`](bench/) is a
+small, fully local, zero-cost harness (Ollama — no Anthropic API calls) that runs
+the extraction prompt against a hand-labeled photo set, scores it deterministically,
+and has a second model propose an improved prompt from the failures — left running
+overnight, it produces a report of the prompt improving generation over generation.
+
+The first run also surfaced a real finding: a naive "edit whatever was just tried"
+optimizer strategy drifted into a local optimum and stayed there for 10+
+generations — both strategies find a good prompt at roughly the same peak score
+(composite ≈0.41–0.43), but the naive one loses it afterward (post-peak average
+composite 0.063) while an "always edit the best-known prompt" strategy holds onto
+it (post-peak average 0.281, 4.5× higher). See [`bench/README.md`](bench/README.md)
+for the full comparison and both reports.
+
 ## Sample photos
 
 The three gallery photos are CC0 / public-domain images from Wikimedia Commons ([cracked retaining wall](https://commons.wikimedia.org/wiki/File:Cracked_concrete_retaining_wall_at_Medway_Park_Sports_Centre,_Gillingham,_Kent,_England.jpg), [basement utility room](https://commons.wikimedia.org/wiki/File:EFTA00000341_-_Empty_basement_room_with_exposed_electrical_wiring_panels_and_pipes_on_the_wall_leading_to_a_doorway_into_another_space.jpg), [water-damaged ceiling](https://commons.wikimedia.org/wiki/File:Ceiling_sheetrock_damaged_by_water_so_paint_was_peeling.jpg)). Their cached results were produced with the same prompt/schema during development and reviewed by hand.

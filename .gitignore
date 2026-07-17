@@ -20,4 +20,6 @@ frontend/dist/
 
 # bench: keep the harness + ground truth + prompts + reports, drop raw caches
 bench/results/cache/
+bench/runs/*/results/cache/
+bench/runs/*/STOP
 bench/STOP
