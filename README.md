@@ -4,7 +4,7 @@
 
 Upload a photo of a construction site and get back a structured punch list: each visible defect with its location, responsible trade, severity, and recommended action — rendered as a filterable table you can export to PDF.
 
-**Live demo:** https://punchlist-ai.vercel.app *(three pre-analyzed sample photos, no API key needed)*
+**Live demo:** https://punchlist-ai-five.vercel.app *(three pre-analyzed sample photos, no API key needed)*
 
 ## Why I built this
 
