@@ -1,7 +1,16 @@
-import { aggregatePhotos, analyzeImage, type AggregateResponse } from '../api'
-import { getPhoto, getRound, listPhotosByRound, putPhoto, putRound, replaceItemsForRound } from './db'
+import { aggregatePhotos, analyzeImage, diffRounds, type AggregateResponse, type DiffResponse } from '../api'
+import {
+  getPhoto,
+  getRound,
+  listItemsByRound,
+  listPhotosByRound,
+  listRoundsByProject,
+  putPhoto,
+  putRound,
+  replaceItemsForRound,
+} from './db'
 import { processPhoto } from './images'
-import type { ConsolidatedItem, Photo } from '../types'
+import type { ConsolidatedItem, Photo, RoundDiff } from '../types'
 
 const CONCURRENCY = 2
 
@@ -119,7 +128,155 @@ export async function aggregateRound(roundId: string, apiKey: string): Promise<v
   }
 
   await replaceItemsForRound(roundId, items)
-  await putRound({ ...round, projectSummary, progressNotes })
+
+  let diff = round.diff
+  if (round.index > 1) {
+    const siblingRounds = await listRoundsByProject(round.projectId)
+    const previousRound = siblingRounds.find((r) => r.index === round.index - 1)
+    if (previousRound) {
+      const previousItems = await listItemsByRound(previousRound.id)
+      diff = await computeRoundDiff(previousItems, items, apiKey)
+    }
+  }
+
+  await putRound({ ...round, projectSummary, progressNotes, diff })
+}
+
+// Compares two rounds' consolidated items and classifies each as closed,
+// persistent, or new. Falls back to a trade+location heuristic if the
+// /diff call fails, so round tracking never dead-ends.
+async function computeRoundDiff(
+  previousItems: ConsolidatedItem[],
+  currentItems: ConsolidatedItem[],
+  apiKey: string,
+): Promise<RoundDiff> {
+  if (previousItems.length === 0) {
+    return { closed: [], persistent: [], new: currentItems.map((i) => i.id) }
+  }
+  if (currentItems.length === 0) {
+    return { closed: previousItems.map((i) => i.id), persistent: [], new: [] }
+  }
+
+  try {
+    const resp = await diffRounds(
+      previousItems.map((i) => ({
+        id: i.id,
+        title: i.title,
+        description: i.description,
+        location: i.location,
+        trade: i.trade,
+        severity: i.severity,
+      })),
+      currentItems.map((i) => ({
+        id: i.id,
+        title: i.title,
+        description: i.description,
+        location: i.location,
+        trade: i.trade,
+        severity: i.severity,
+      })),
+      apiKey,
+    )
+    return validateDiff(resp, previousItems, currentItems)
+  } catch {
+    return heuristicDiff(previousItems, currentItems)
+  }
+}
+
+// Anti-hallucination guard: drops any id the model invented, then assigns
+// every remaining previous/current id to closed/new respectively so the
+// diff always accounts for 100% of both rounds' items.
+function validateDiff(
+  resp: DiffResponse,
+  previousItems: ConsolidatedItem[],
+  currentItems: ConsolidatedItem[],
+): RoundDiff {
+  const previousIds = new Set(previousItems.map((i) => i.id))
+  const currentIds = new Set(currentItems.map((i) => i.id))
+  const claimedPrevious = new Set<string>()
+  const claimedCurrent = new Set<string>()
+
+  const persistent: RoundDiff['persistent'] = []
+  for (const p of resp.persistent) {
+    if (
+      previousIds.has(p.previous_id) &&
+      currentIds.has(p.current_id) &&
+      !claimedPrevious.has(p.previous_id) &&
+      !claimedCurrent.has(p.current_id)
+    ) {
+      persistent.push({ previousId: p.previous_id, currentId: p.current_id, note: p.note })
+      claimedPrevious.add(p.previous_id)
+      claimedCurrent.add(p.current_id)
+    }
+  }
+
+  const closed: string[] = []
+  for (const id of resp.closed) {
+    if (previousIds.has(id) && !claimedPrevious.has(id)) {
+      closed.push(id)
+      claimedPrevious.add(id)
+    }
+  }
+  for (const id of previousIds) {
+    if (!claimedPrevious.has(id)) {
+      closed.push(id)
+      claimedPrevious.add(id)
+    }
+  }
+
+  const fresh: string[] = []
+  for (const id of resp.new) {
+    if (currentIds.has(id) && !claimedCurrent.has(id)) {
+      fresh.push(id)
+      claimedCurrent.add(id)
+    }
+  }
+  for (const id of currentIds) {
+    if (!claimedCurrent.has(id)) {
+      fresh.push(id)
+      claimedCurrent.add(id)
+    }
+  }
+
+  return { closed, persistent, new: fresh }
+}
+
+function heuristicDiff(previousItems: ConsolidatedItem[], currentItems: ConsolidatedItem[]): RoundDiff {
+  const usedCurrent = new Set<string>()
+  const persistent: RoundDiff['persistent'] = []
+  const closed: string[] = []
+
+  for (const prev of previousItems) {
+    const match = currentItems.find(
+      (cur) => !usedCurrent.has(cur.id) && cur.trade === prev.trade && similarLocation(cur.location, prev.location),
+    )
+    if (match) {
+      persistent.push({ previousId: prev.id, currentId: match.id })
+      usedCurrent.add(match.id)
+    } else {
+      closed.push(prev.id)
+    }
+  }
+
+  const fresh = currentItems.filter((c) => !usedCurrent.has(c.id)).map((c) => c.id)
+  return { closed, persistent, new: fresh }
+}
+
+function similarLocation(a: string, b: string): boolean {
+  const words = (s: string) =>
+    new Set(
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .split(' ')
+        .filter((w) => w.length > 3),
+    )
+  const wordsA = words(a)
+  const wordsB = words(b)
+  if (wordsA.size === 0 || wordsB.size === 0) return false
+  let overlap = 0
+  for (const w of wordsA) if (wordsB.has(w)) overlap++
+  return overlap / Math.min(wordsA.size, wordsB.size) >= 0.5
 }
 
 function toConsolidatedItems(

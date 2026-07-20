@@ -47,6 +47,33 @@ export async function aggregatePhotos(
   return postJson<AggregateResponse>('/aggregate', { photos }, apiKey)
 }
 
+export interface DiffItemInput {
+  id: string
+  title: string
+  description: string
+  location: string
+  trade: Trade
+  severity: Severity
+}
+
+export interface DiffResponse {
+  closed: string[]
+  persistent: { previous_id: string; current_id: string; note?: string }[]
+  new: string[]
+}
+
+export async function diffRounds(
+  previousItems: DiffItemInput[],
+  currentItems: DiffItemInput[],
+  apiKey: string,
+): Promise<DiffResponse> {
+  return postJson<DiffResponse>(
+    '/diff',
+    { previous_items: previousItems, current_items: currentItems },
+    apiKey,
+  )
+}
+
 async function postJson<T>(path: string, body: unknown, apiKey: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',

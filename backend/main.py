@@ -7,6 +7,10 @@ POST /aggregate takes the per-photo punch lists for a project (or one
 inspection round) and consolidates them into a single project-level list,
 merging duplicate defects seen in multiple photos.
 
+POST /diff compares the consolidated items from two inspection rounds and
+classifies each as closed, persistent, or new, so a project's punch list
+can be tracked over time.
+
 The Anthropic API key can come from:
   1. the X-Anthropic-Key request header (BYO key — used for that request
      only, never logged or stored), or
@@ -256,6 +260,71 @@ Rules:
 - Use the record_consolidated_list tool for your answer."""
 
 
+class DiffItemInput(BaseModel):
+    id: str
+    title: str
+    description: str
+    location: str
+    trade: str
+    severity: str
+
+
+class DiffRequest(BaseModel):
+    previous_items: list[DiffItemInput]
+    current_items: list[DiffItemInput]
+
+
+ROUND_DIFF_TOOL = {
+    "name": "record_round_diff",
+    "description": "Record how punch list items changed between two inspection rounds.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "closed": {
+                "type": "array",
+                "description": "IDs from previous_items that are no longer visible/present in current_items (resolved).",
+                "items": {"type": "string"},
+            },
+            "persistent": {
+                "type": "array",
+                "description": "Pairs where the same physical defect appears in both rounds.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "previous_id": {"type": "string"},
+                        "current_id": {"type": "string"},
+                        "note": {
+                            "type": "string",
+                            "description": "Optional short note on how it changed (e.g. 'unchanged', 'worsened').",
+                        },
+                    },
+                    "required": ["previous_id", "current_id"],
+                },
+            },
+            "new": {
+                "type": "array",
+                "description": "IDs from current_items that were not present in previous_items.",
+                "items": {"type": "string"},
+            },
+        },
+        "required": ["closed", "persistent", "new"],
+    },
+}
+
+DIFF_SYSTEM_PROMPT = """You are comparing two rounds of construction site punch list items to track
+progress over time.
+
+Rules:
+- Match items that describe the same physical defect (same trade, same or very similar
+  location, similar description) as persistent — the defect is still present.
+- Items from previous_items with no match in current_items are closed (assume resolved).
+- Items from current_items with no match in previous_items are new.
+- Every id from previous_items must appear in exactly one of closed or persistent.previous_id.
+- Every id from current_items must appear in exactly one of new or persistent.current_id.
+- Do not invent ids that are not in the input.
+- Use the record_round_diff tool for your answer."""
+
+
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok", "model": MODEL}
@@ -338,6 +407,32 @@ def aggregate(
         "punch list.\n\n" + payload
     )
     return _forced_tool_call(api_key, AGGREGATE_SYSTEM_PROMPT, user_text, CONSOLIDATED_LIST_TOOL)
+
+
+@router.post("/diff")
+def diff(
+    req: DiffRequest,
+    x_anthropic_key: str | None = Header(default=None),
+) -> dict:
+    api_key = _require_api_key(x_anthropic_key)
+
+    if not req.previous_items and not req.current_items:
+        raise HTTPException(status_code=400, detail="No items to diff.")
+    total_items = len(req.previous_items) + len(req.current_items)
+    if total_items > MAX_AGGREGATE_ITEMS:
+        raise HTTPException(
+            status_code=413, detail=f"Too many items to diff (max {MAX_AGGREGATE_ITEMS})."
+        )
+
+    payload = json.dumps(
+        {
+            "previous_items": [i.model_dump() for i in req.previous_items],
+            "current_items": [i.model_dump() for i in req.current_items],
+        },
+        indent=2,
+    )
+    user_text = "Compare these two inspection rounds and classify every item.\n\n" + payload
+    return _forced_tool_call(api_key, DIFF_SYSTEM_PROMPT, user_text, ROUND_DIFF_TOOL)
 
 
 def create_app(prefix: str = "") -> FastAPI:

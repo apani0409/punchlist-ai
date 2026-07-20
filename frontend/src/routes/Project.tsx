@@ -1,54 +1,102 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { getProject, listItemsByRound, listPhotosByRound, listRoundsByProject } from '../lib/db'
+import { Link, useParams } from 'react-router-dom'
+import {
+  getProject,
+  listItemsByRound,
+  listPhotosByRound,
+  listRoundsByProject,
+  putRound,
+} from '../lib/db'
 import { addPhotosToRound, retryPhoto, runRoundAnalysis } from '../lib/analyze'
 import UploadDrop from '../components/UploadDrop'
 import PhotoGrid from '../components/PhotoGrid'
 import ProgressList from '../components/ProgressList'
 import ItemsTable from '../components/ItemsTable'
+import RoundTabs from '../components/RoundTabs'
+import DiffView from '../components/DiffView'
 import ApiKeyField, { useApiKey } from '../components/ApiKeyField'
 import type { ConsolidatedItem, Photo, Project as ProjectType, Round } from '../types'
 
 export default function Project() {
   const { projectId } = useParams<{ projectId: string }>()
   const [project, setProject] = useState<ProjectType | null>(null)
-  const [round, setRound] = useState<Round | null>(null)
+  const [rounds, setRounds] = useState<Round[]>([])
+  const [activeRoundId, setActiveRoundId] = useState<string | null>(null)
   const [photos, setPhotos] = useState<Photo[]>([])
   const [items, setItems] = useState<ConsolidatedItem[]>([])
+  const [previousItems, setPreviousItems] = useState<ConsolidatedItem[]>([])
   const [apiKey, setApiKey] = useApiKey()
   const [analyzing, setAnalyzing] = useState(false)
+  const [creatingRound, setCreatingRound] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const refresh = useCallback(async () => {
-    if (!projectId) return
-    const p = await getProject(projectId)
-    setProject(p ?? null)
-    const rounds = await listRoundsByProject(projectId)
-    const current = rounds[rounds.length - 1] ?? null
-    setRound(current)
-    if (current) {
-      const [ph, it] = await Promise.all([
-        listPhotosByRound(current.id),
-        listItemsByRound(current.id),
-      ])
-      setPhotos(ph)
-      setItems(it)
-    } else {
-      setPhotos([])
-      setItems([])
-    }
-    setLoading(false)
-  }, [projectId])
+  const round = rounds.find((r) => r.id === activeRoundId) ?? null
+
+  const loadRoundDetail = useCallback(async (target: Round, allRounds: Round[]) => {
+    const [ph, it] = await Promise.all([listPhotosByRound(target.id), listItemsByRound(target.id)])
+    setPhotos(ph)
+    setItems(it)
+    const prevRound = allRounds.find((r) => r.index === target.index - 1)
+    setPreviousItems(prevRound ? await listItemsByRound(prevRound.id) : [])
+  }, [])
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    if (!projectId) return
+    void (async () => {
+      setLoading(true)
+      const p = await getProject(projectId)
+      setProject(p ?? null)
+      const allRounds = await listRoundsByProject(projectId)
+      setRounds(allRounds)
+      const latest = allRounds[allRounds.length - 1] ?? null
+      setActiveRoundId(latest?.id ?? null)
+      if (latest) await loadRoundDetail(latest, allRounds)
+      setLoading(false)
+    })()
+  }, [projectId, loadRoundDetail])
+
+  async function selectRound(id: string) {
+    setActiveRoundId(id)
+    const target = rounds.find((r) => r.id === id)
+    if (target) await loadRoundDetail(target, rounds)
+  }
+
+  // Reloads rounds (to pick up updated diff/summary/progressNotes) plus the
+  // currently active round's photos/items. Used after any mutation that
+  // doesn't itself switch rounds (upload, analyze, retry).
+  async function refreshCurrent() {
+    if (!projectId || !activeRoundId) return
+    const allRounds = await listRoundsByProject(projectId)
+    setRounds(allRounds)
+    const target = allRounds.find((r) => r.id === activeRoundId) ?? null
+    if (target) await loadRoundDetail(target, allRounds)
+  }
+
+  async function handleStartRound() {
+    if (!projectId) return
+    setCreatingRound(true)
+    const now = Date.now()
+    const nextIndex = (rounds[rounds.length - 1]?.index ?? 0) + 1
+    const newRound: Round = {
+      id: crypto.randomUUID(),
+      projectId,
+      index: nextIndex,
+      name: `Round ${nextIndex}`,
+      createdAt: now,
+    }
+    await putRound(newRound)
+    const allRounds = await listRoundsByProject(projectId)
+    setRounds(allRounds)
+    setActiveRoundId(newRound.id)
+    await loadRoundDetail(newRound, allRounds)
+    setCreatingRound(false)
+  }
 
   async function handleFiles(files: File[]) {
     if (!projectId || !round) return
     await addPhotosToRound(projectId, round.id, files)
-    await refresh()
+    await refreshCurrent()
   }
 
   async function handleAnalyze() {
@@ -60,8 +108,8 @@ export default function Project() {
     setError(null)
     setAnalyzing(true)
     try {
-      await runRoundAnalysis(round.id, apiKey.trim(), () => void refresh())
-      await refresh()
+      await runRoundAnalysis(round.id, apiKey.trim(), () => void refreshCurrent())
+      await refreshCurrent()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Analysis failed')
     } finally {
@@ -76,8 +124,8 @@ export default function Project() {
     }
     setError(null)
     try {
-      await retryPhoto(photoId, apiKey.trim(), () => void refresh())
-      await refresh()
+      await retryPhoto(photoId, apiKey.trim(), () => void refreshCurrent())
+      await refreshCurrent()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Retry failed')
     }
@@ -100,14 +148,28 @@ export default function Project() {
   }
 
   const hasPending = photos.some((p) => p.status === 'pending' || p.status === 'error')
+  const photosById = new Map(photos.map((p) => [p.id, p]))
 
   return (
     <div className="page">
       <section className="panel">
-        <h2>{project.name}</h2>
-        <p className="summary">{round.name}</p>
+        <div className="results-head">
+          <div>
+            <h2>{project.name}</h2>
+            <p className="summary">{round.name}</p>
+          </div>
+          <Link to={`/project/${project.id}/dashboard`} className="pdf-btn">
+            Dashboard →
+          </Link>
+        </div>
+        <RoundTabs rounds={rounds} activeRoundId={activeRoundId} onSelect={(id) => void selectRound(id)} />
         {round.projectSummary && <p className="summary">{round.projectSummary}</p>}
         {round.progressNotes && <p className="summary progress-notes">{round.progressNotes}</p>}
+        <div className="round-actions">
+          <button className="pdf-btn" disabled={creatingRound} onClick={() => void handleStartRound()}>
+            {creatingRound ? 'Starting…' : `Start round ${(rounds[rounds.length - 1]?.index ?? 0) + 1}`}
+          </button>
+        </div>
       </section>
 
       <section className="panel">
@@ -127,9 +189,16 @@ export default function Project() {
         {error && <p className="error">{error}</p>}
       </section>
 
+      {round.diff && (
+        <section className="panel">
+          <h2>Changes vs previous round</h2>
+          <DiffView diff={round.diff} previousItems={previousItems} currentItems={items} />
+        </section>
+      )}
+
       <section className="panel results">
         <h2>Consolidated punch list</h2>
-        <ItemsTable items={items} />
+        <ItemsTable items={items} photosById={photosById} />
       </section>
     </div>
   )

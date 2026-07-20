@@ -1,12 +1,21 @@
 import { useMemo, useState } from 'react'
-import type { ConsolidatedItem, Severity, Trade } from '../types'
+import type { ConsolidatedItem, Photo, Severity, Trade } from '../types'
 import SeverityBadge from './SeverityBadge'
+import BlobImage from './BlobImage'
+import PhotoLightbox from './PhotoLightbox'
 
 const SEVERITY_ORDER: Record<Severity, number> = { high: 0, medium: 1, low: 2 }
 
-export default function ItemsTable({ items }: { items: ConsolidatedItem[] }) {
+export default function ItemsTable({
+  items,
+  photosById,
+}: {
+  items: ConsolidatedItem[]
+  photosById: Map<string, Photo>
+}) {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all')
   const [tradeFilter, setTradeFilter] = useState<Trade | 'all'>('all')
+  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null)
 
   const trades = useMemo(() => [...new Set(items.map((i) => i.trade))], [items])
 
@@ -56,7 +65,7 @@ export default function ItemsTable({ items }: { items: ConsolidatedItem[] }) {
             <th>Trade</th>
             <th>Severity</th>
             <th>Recommended action</th>
-            <th>Photos</th>
+            <th>Source</th>
           </tr>
         </thead>
         <tbody>
@@ -74,11 +83,30 @@ export default function ItemsTable({ items }: { items: ConsolidatedItem[] }) {
                 <SeverityBadge severity={it.severity} />
               </td>
               <td>{it.recommended_action}</td>
-              <td className="num">{it.sourcePhotoIds.length}</td>
+              <td>
+                <div className="photo-thumbs">
+                  {it.sourcePhotoIds.map((pid) => {
+                    const photo = photosById.get(pid)
+                    if (!photo) return null
+                    return (
+                      <button
+                        key={pid}
+                        className="photo-thumb-btn"
+                        title={photo.label}
+                        onClick={() => setLightboxPhoto(photo)}
+                      >
+                        <BlobImage blob={photo.thumbBlob} alt={photo.label} className="photo-thumb-img" />
+                      </button>
+                    )
+                  })}
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {lightboxPhoto && <PhotoLightbox photo={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />}
     </div>
   )
 }

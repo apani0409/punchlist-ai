@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import BlobImage from './BlobImage'
 import type { Photo } from '../types'
 
 export default function PhotoGrid({
@@ -19,17 +19,9 @@ export default function PhotoGrid({
 }
 
 function PhotoCard({ photo, onRetry }: { photo: Photo; onRetry?: (photoId: string) => void }) {
-  const [url, setUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    const objectUrl = URL.createObjectURL(photo.thumbBlob)
-    setUrl(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
-  }, [photo.thumbBlob])
-
   return (
     <div className={`photo-card status-${photo.status}`}>
-      {url && <img src={url} alt={photo.label} loading="lazy" />}
+      <BlobImage blob={photo.thumbBlob} alt={photo.label} />
       <div className="photo-card-info">
         <span className="photo-label">{photo.label}</span>
         <span className="photo-status">
