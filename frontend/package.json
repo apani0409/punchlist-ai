@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "idb": "^8.0.3",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.18.1"
+    "react-router-dom": "^7.18.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

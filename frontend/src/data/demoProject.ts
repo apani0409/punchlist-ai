@@ -1,5 +1,6 @@
 import { SAMPLES } from './samples'
-import type { PunchListResult, RoundDiff, Severity, Trade } from '../types'
+import { BASEMENT_HEIGHT, BUILDING_WIDTH, FLOOR_HEIGHT } from '../lib/twinDimensions'
+import type { PunchListResult, RoundDiff, Severity, Trade, TwinPosition } from '../types'
 
 export const DEMO_PROJECT_ID = 'demo'
 
@@ -8,7 +9,17 @@ export interface DemoPhoto {
   label: string
   photoPath: string
   analysis: PunchListResult
+  twin?: TwinPosition
 }
+
+// Hand-picked digital-twin marker positions, referencing the building's
+// exported dimension constants so they stay valid if those change.
+// - Retaining wall: exterior, just outside the footprint at grade.
+// - Basement utility room: below grade, mid-footprint.
+// - Water-damaged ceiling: interior, near the underside of level 2.
+const TWIN_CRACKED_WALL: TwinPosition = { x: BUILDING_WIDTH / 2 + 3, y: 0, z: 0 }
+const TWIN_BASEMENT_WIRING: TwinPosition = { x: -6, y: -BASEMENT_HEIGHT / 2, z: -3 }
+const TWIN_WATER_DAMAGE_CEILING: TwinPosition = { x: 4, y: FLOOR_HEIGHT * 2 - 0.3, z: 3 }
 
 export interface DemoItem {
   id: string
@@ -53,18 +64,26 @@ const round1: DemoRound = {
     'unsecured, and at least one occupied-space ceiling needs remediation before finishes can start. ' +
     'No single trade is blocking the others yet, but the ceiling leak should be traced before it does.',
   photos: [
-    { id: 'demo-cracked-wall', label: crackedWall.label, photoPath: crackedWall.photo, analysis: crackedWall.result },
+    {
+      id: 'demo-cracked-wall',
+      label: crackedWall.label,
+      photoPath: crackedWall.photo,
+      analysis: crackedWall.result,
+      twin: TWIN_CRACKED_WALL,
+    },
     {
       id: 'demo-basement-wiring',
       label: basementWiring.label,
       photoPath: basementWiring.photo,
       analysis: basementWiring.result,
+      twin: TWIN_BASEMENT_WIRING,
     },
     {
       id: 'demo-water-damage-ceiling',
       label: waterDamageCeiling.label,
       photoPath: waterDamageCeiling.photo,
       analysis: waterDamageCeiling.result,
+      twin: TWIN_WATER_DAMAGE_CEILING,
     },
   ],
   items: [
@@ -189,6 +208,7 @@ const round2: DemoRound = {
           },
         ],
       },
+      twin: TWIN_CRACKED_WALL,
     },
     {
       id: 'demo-r2-basement-wiring',
@@ -222,6 +242,7 @@ const round2: DemoRound = {
           },
         ],
       },
+      twin: TWIN_BASEMENT_WIRING,
     },
     {
       id: 'demo-r2-water-damage-ceiling',
@@ -261,6 +282,7 @@ const round2: DemoRound = {
           },
         ],
       },
+      twin: TWIN_WATER_DAMAGE_CEILING,
     },
   ],
   items: [

@@ -15,6 +15,7 @@ import ItemsTable from '../components/ItemsTable'
 import RoundTabs from '../components/RoundTabs'
 import DiffView from '../components/DiffView'
 import ApiKeyField, { useApiKey } from '../components/ApiKeyField'
+import { exportProjectPdf } from '../pdf'
 import type { ConsolidatedItem, Photo, Project as ProjectType, Round } from '../types'
 
 export default function Project() {
@@ -158,9 +159,14 @@ export default function Project() {
             <h2>{project.name}</h2>
             <p className="summary">{round.name}</p>
           </div>
-          <Link to={`/project/${project.id}/dashboard`} className="pdf-btn">
-            Dashboard →
-          </Link>
+          <div className="project-nav-links">
+            <Link to={`/project/${project.id}/twin`} className="pdf-btn">
+              Digital twin →
+            </Link>
+            <Link to={`/project/${project.id}/dashboard`} className="pdf-btn">
+              Dashboard →
+            </Link>
+          </div>
         </div>
         <RoundTabs rounds={rounds} activeRoundId={activeRoundId} onSelect={(id) => void selectRound(id)} />
         {round.projectSummary && <p className="summary">{round.projectSummary}</p>}
@@ -197,7 +203,17 @@ export default function Project() {
       )}
 
       <section className="panel results">
-        <h2>Consolidated punch list</h2>
+        <div className="results-head">
+          <h2>Consolidated punch list</h2>
+          {items.length > 0 && (
+            <button
+              className="pdf-btn"
+              onClick={() => void exportProjectPdf(project.name, round.name, items)}
+            >
+              Export PDF
+            </button>
+          )}
+        </div>
         <ItemsTable items={items} photosById={photosById} />
       </section>
     </div>

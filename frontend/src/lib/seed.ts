@@ -5,7 +5,7 @@ import type { ConsolidatedItem, Photo, Project, Round } from '../types'
 
 // Bump when DEMO_DATA changes shape/content so returning users get the
 // refreshed seed instead of a stale one from an earlier version.
-const DEMO_VERSION = 2
+const DEMO_VERSION = 3
 
 export async function ensureDemoProject(): Promise<void> {
   const db = await getDB()
@@ -53,6 +53,7 @@ export async function ensureDemoProject(): Promise<void> {
         createdAt: now,
         status: 'done',
         analysis: p.analysis,
+        twin: p.twin,
       }
       await putPhoto(photo)
     }

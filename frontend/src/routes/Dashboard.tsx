@@ -55,9 +55,14 @@ export default function Dashboard() {
               synthetic figures.
             </p>
           </div>
-          <Link to={`/project/${project.id}`} className="pdf-btn">
-            ← Punch list
-          </Link>
+          <div className="project-nav-links">
+            <Link to={`/project/${project.id}/twin`} className="pdf-btn">
+              Digital twin →
+            </Link>
+            <Link to={`/project/${project.id}`} className="pdf-btn">
+              ← Punch list
+            </Link>
+          </div>
         </div>
 
         <div className="stat-grid">
