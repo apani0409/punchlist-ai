@@ -1014,6 +1014,22 @@ td.num {
   font-size: 13.5px;
 }
 
+.twin-selected-thumb-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.twin-selected-thumb-btn .thumb {
+  transition: opacity 0.15s;
+}
+
+.twin-selected-thumb-btn:hover .thumb {
+  opacity: 0.85;
+}
+
 /* --- v2 Day 4: document intelligence --- */
 
 .doc-input {

@@ -9,6 +9,8 @@ import {
 } from '../lib/db'
 import RoundTabs from '../components/RoundTabs'
 import SeverityBadge from '../components/SeverityBadge'
+import BlobImage from '../components/BlobImage'
+import PhotoLightbox from '../components/PhotoLightbox'
 import type { ConsolidatedItem, Photo, Project as ProjectType, Round, TwinPosition } from '../types'
 
 // Lazy-loaded so three.js / @react-three/* (~150KB gz) never touch the
@@ -24,6 +26,7 @@ export default function Twin() {
   const [items, setItems] = useState<ConsolidatedItem[]>([])
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [placingPhotoId, setPlacingPhotoId] = useState<string | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const loadRound = useCallback(async (roundId: string) => {
@@ -32,6 +35,7 @@ export default function Twin() {
     setItems(it)
     setSelectedPhoto(null)
     setPlacingPhotoId(null)
+    setLightboxOpen(false)
   }, [])
 
   useEffect(() => {
@@ -168,20 +172,31 @@ export default function Twin() {
 
       {selectedPhoto && (
         <section className="panel">
-          <h2>{selectedPhoto.label}</h2>
-          {selectedItems.length === 0 ? (
-            <p className="summary">No open items at this photo.</p>
-          ) : (
-            <ul className="twin-item-list">
-              {selectedItems.map((it) => (
-                <li key={it.id}>
-                  <SeverityBadge severity={it.severity} />
-                  <span>{it.title}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="results-head">
+            <div>
+              <h2>{selectedPhoto.label}</h2>
+              {selectedItems.length === 0 ? (
+                <p className="summary">No open items at this photo.</p>
+              ) : (
+                <ul className="twin-item-list">
+                  {selectedItems.map((it) => (
+                    <li key={it.id}>
+                      <SeverityBadge severity={it.severity} />
+                      <span>{it.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button className="twin-selected-thumb-btn" onClick={() => setLightboxOpen(true)}>
+              <BlobImage blob={selectedPhoto.thumbBlob} alt={selectedPhoto.label} className="thumb" />
+            </button>
+          </div>
         </section>
+      )}
+
+      {selectedPhoto && lightboxOpen && (
+        <PhotoLightbox photo={selectedPhoto} onClose={() => setLightboxOpen(false)} />
       )}
     </div>
   )
