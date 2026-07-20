@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import Building from './Building'
@@ -11,6 +12,11 @@ import {
 } from '../../lib/twinDimensions'
 import type { ConsolidatedItem, Photo, TwinPosition } from '../../types'
 
+// web-ifc (~1MB+ of WASM-loading JS glue) is only fetched when a user
+// actually switches to the BIM geometry source — a second lazy boundary
+// inside the twin's own already-lazy chunk, not paid just for opening Twin.
+const IfcModel = lazy(() => import('./IfcModel'))
+
 const CAM_DISTANCE = Math.max(FOOTPRINT_SPAN_X, FOOTPRINT_SPAN_Z) * 1.4
 const TARGET_Y = (BUILDING_HEIGHT - BASEMENT_HEIGHT) / 2
 
@@ -21,6 +27,9 @@ export default function TwinCanvas({
   onSelectPhoto,
   placing,
   onPlace,
+  ifcUrl,
+  onIfcLoaded,
+  onIfcError,
 }: {
   photos: Photo[]
   items: ConsolidatedItem[]
@@ -28,6 +37,9 @@ export default function TwinCanvas({
   onSelectPhoto: (photo: Photo) => void
   placing: boolean
   onPlace: (point: TwinPosition) => void
+  ifcUrl: string | null
+  onIfcLoaded?: (meshCount: number) => void
+  onIfcError?: (message: string) => void
 }) {
   return (
     <Canvas
@@ -39,7 +51,13 @@ export default function TwinCanvas({
       <directionalLight position={[15, 25, 10]} intensity={1.1} />
       <directionalLight position={[-15, 10, -10]} intensity={0.3} />
 
-      <Building />
+      {ifcUrl ? (
+        <Suspense fallback={null}>
+          <IfcModel url={ifcUrl} onLoaded={onIfcLoaded} onError={onIfcError} />
+        </Suspense>
+      ) : (
+        <Building />
+      )}
       <Markers photos={photos} items={items} selectedPhotoId={selectedPhotoId} onSelectPhoto={onSelectPhoto} />
       {placing && <PlacementController onPlace={onPlace} />}
 

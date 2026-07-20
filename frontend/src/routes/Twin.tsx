@@ -17,6 +17,10 @@ import type { ConsolidatedItem, Photo, Project as ProjectType, Round, TwinPositi
 // initial bundle — only paid when a user actually opens the twin.
 const TwinCanvas = lazy(() => import('../components/twin/TwinCanvas'))
 
+const DEMO_IFC_URL = '/models/demo-building.ifc'
+
+type IfcStatus = 'idle' | 'loading' | 'loaded' | 'error'
+
 export default function Twin() {
   const { projectId } = useParams<{ projectId: string }>()
   const [project, setProject] = useState<ProjectType | null>(null)
@@ -28,6 +32,37 @@ export default function Twin() {
   const [placingPhotoId, setPlacingPhotoId] = useState<string | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const [geometrySource, setGeometrySource] = useState<'schematic' | 'ifc'>('schematic')
+  const [ifcUrl, setIfcUrl] = useState<string | null>(null)
+  const [ifcFileName, setIfcFileName] = useState<string | null>(null)
+  const [ifcStatus, setIfcStatus] = useState<IfcStatus>('idle')
+  const [ifcMeshCount, setIfcMeshCount] = useState<number | null>(null)
+  const [ifcError, setIfcError] = useState<string | null>(null)
+
+  function showSchematic() {
+    setGeometrySource('schematic')
+  }
+
+  function showDemoIfc() {
+    if (ifcUrl?.startsWith('blob:')) URL.revokeObjectURL(ifcUrl)
+    setIfcUrl(DEMO_IFC_URL)
+    setIfcFileName('demo-building.ifc')
+    setIfcStatus('loading')
+    setIfcMeshCount(null)
+    setIfcError(null)
+    setGeometrySource('ifc')
+  }
+
+  function handleIfcUpload(file: File) {
+    if (ifcUrl?.startsWith('blob:')) URL.revokeObjectURL(ifcUrl)
+    setIfcUrl(URL.createObjectURL(file))
+    setIfcFileName(file.name)
+    setIfcStatus('loading')
+    setIfcMeshCount(null)
+    setIfcError(null)
+    setGeometrySource('ifc')
+  }
 
   const loadRound = useCallback(async (roundId: string) => {
     const [ph, it] = await Promise.all([listPhotosByRound(roundId), listItemsByRound(roundId)])
@@ -98,9 +133,9 @@ export default function Twin() {
           <div>
             <h2>{project.name} — Digital twin</h2>
             <p className="summary">
-              Schematic 3D placeholder, not a survey-accurate model. Markers show where each photo
-              was taken and are colored by the worst open severity found there — click one to see
-              its findings.
+              Markers show where each photo was taken and are colored by the worst open severity
+              found there — click one to see its findings. Markers work the same regardless of the
+              geometry underneath.
             </p>
           </div>
           <Link to={`/project/${project.id}`} className="pdf-btn">
@@ -108,6 +143,52 @@ export default function Twin() {
           </Link>
         </div>
         <RoundTabs rounds={rounds} activeRoundId={activeRoundId} onSelect={(id) => void selectRound(id)} />
+      </section>
+
+      <section className="panel">
+        <div className="twin-geometry-toggle">
+          <div className="twin-geometry-buttons">
+            <button
+              className={`twin-geometry-btn ${geometrySource === 'schematic' ? 'active' : ''}`}
+              onClick={showSchematic}
+            >
+              Schematic
+            </button>
+            <button className={`twin-geometry-btn ${geometrySource === 'ifc' ? 'active' : ''}`} onClick={showDemoIfc}>
+              BIM (IFC)
+            </button>
+            <label className="twin-geometry-upload">
+              Upload .ifc…
+              <input
+                type="file"
+                accept=".ifc"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleIfcUpload(file)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          </div>
+          {geometrySource === 'schematic' && (
+            <p className="summary twin-geometry-note">
+              Procedurally-generated massing model — a placeholder, not a survey-accurate building.
+            </p>
+          )}
+          {geometrySource === 'ifc' && ifcStatus === 'loading' && (
+            <p className="summary twin-geometry-note">Parsing {ifcFileName}…</p>
+          )}
+          {geometrySource === 'ifc' && ifcStatus === 'loaded' && (
+            <p className="summary twin-geometry-note">
+              Real IFC model parsed in your browser: {ifcFileName} ({ifcMeshCount} elements). Rescaled
+              to this footprint so existing markers still land on it — not a survey-accurate
+              registration.
+            </p>
+          )}
+          {geometrySource === 'ifc' && ifcStatus === 'error' && (
+            <p className="error twin-geometry-note">{ifcError}</p>
+          )}
+        </div>
       </section>
 
       <section className="panel twin-panel">
@@ -131,6 +212,15 @@ export default function Twin() {
               onSelectPhoto={setSelectedPhoto}
               placing={!!placingPhoto}
               onPlace={(p) => void handlePlace(p)}
+              ifcUrl={geometrySource === 'ifc' ? ifcUrl : null}
+              onIfcLoaded={(meshCount) => {
+                setIfcStatus('loaded')
+                setIfcMeshCount(meshCount)
+              }}
+              onIfcError={(message) => {
+                setIfcStatus('error')
+                setIfcError(message)
+              }}
             />
           </Suspense>
         </div>
