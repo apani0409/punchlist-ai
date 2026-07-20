@@ -99,6 +99,10 @@ export interface ConsolidatedItem {
   severity: Severity
   recommended_action: string
   sourcePhotoIds: string[]
+  // Hand-linked in the demo project only (never auto-generated for live
+  // items — that would mean classifying a finding against a code without
+  // being asked to, which risks a wrong citation reading as authoritative).
+  codeRefs?: { section: string; title: string }[]
 }
 
 // --- v2 Day 4: document intelligence (RFI / change order / notice) ---

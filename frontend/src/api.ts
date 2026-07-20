@@ -155,6 +155,32 @@ export interface RiskReportResponse {
   risks: RiskReportRisk[]
 }
 
+export interface CodeSectionInput {
+  section: string
+  title: string
+  text: string
+}
+
+export interface CodeCitation {
+  section: string
+  title: string
+  quote: string
+}
+
+export interface CodeSearchResponse {
+  answer: string
+  grounded: boolean
+  citations: CodeCitation[]
+}
+
+export async function searchCodes(
+  question: string,
+  sections: CodeSectionInput[],
+  apiKey: string,
+): Promise<CodeSearchResponse> {
+  return postJson<CodeSearchResponse>('/code-search', { question, sections }, apiKey)
+}
+
 export async function riskReport(
   items: RiskReportItemInput[],
   diff: RiskReportDiffInput | undefined,

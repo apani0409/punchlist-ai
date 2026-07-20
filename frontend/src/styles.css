@@ -1360,6 +1360,75 @@ td.num {
   color: #fff;
 }
 
+/* --- v3: codes & standards search --- */
+
+.code-citations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.code-citation-card {
+  display: block;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.code-citation-card:hover {
+  border-color: var(--accent);
+}
+
+.code-citation-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.code-citation-section {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 12.5px;
+}
+
+.code-citation-title {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.code-citation-quote {
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+.code-ref-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-decoration: none;
+  margin-top: 4px;
+  margin-right: 4px;
+}
+
+.code-ref-chip:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* --- v2 Day 6: risk report --- */
 
 .risk-headline {

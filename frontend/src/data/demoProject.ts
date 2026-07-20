@@ -44,6 +44,7 @@ export interface DemoItem {
   severity: Severity
   recommended_action: string
   sourcePhotoIds: string[]
+  codeRefs?: { section: string; title: string }[]
 }
 
 export interface DemoRound {
@@ -179,9 +180,7 @@ const round1: DemoRound = {
   ],
   items: [
     ...crackedWallItems(),
-    ...basementWiring.result.items.map((it) =>
-      toDemoItem('demo-r1', 'demo-basement-wiring', basementWiring.label, it),
-    ),
+    ...basementWiringItems(),
     ...waterDamageCeiling.result.items.map((it) =>
       toDemoItem('demo-r1', 'demo-water-damage-ceiling', waterDamageCeiling.label, it),
     ),
@@ -195,6 +194,22 @@ function crackedWallItems(): DemoItem[] {
   const items = crackedWall.result.items.map((it) => toDemoItem('demo-r1', 'demo-cracked-wall', crackedWall.label, it))
   const crack = items.find((it) => it.id === R1_CRACK)
   if (crack) crack.sourcePhotoIds.push('demo-crack-detail')
+  return items
+}
+
+// Hand-linked to the OSHA subset in codeCorpus.ts — a genuine fit (exposed
+// live circuit, not properly guarded), same discipline as the cover-plate
+// item's codeRefs below.
+function basementWiringItems(): DemoItem[] {
+  const items = basementWiring.result.items.map((it) =>
+    toDemoItem('demo-r1', 'demo-basement-wiring', basementWiring.label, it),
+  )
+  const cable = items.find((it) => it.id === R1_CABLE)
+  if (cable) {
+    cable.codeRefs = [
+      { section: '1926.416(a)(1)', title: 'Electrical — protection of employees, general' },
+    ]
+  }
   return items
 }
 
@@ -470,6 +485,10 @@ const round2: DemoRound = {
       severity: 'medium',
       recommended_action: 'Install an appropriately rated cover plate before the room is signed off.',
       sourcePhotoIds: ['demo-r2-basement-wiring'],
+      codeRefs: [
+        { section: '1926.405(b)(2)', title: 'Electrical — cabinets, boxes, and fittings: covers and canopies' },
+        { section: '1926.405(d)', title: 'Electrical — switchboards and panelboards' },
+      ],
     },
   ],
   diff: {

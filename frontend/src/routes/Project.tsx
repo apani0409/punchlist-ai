@@ -163,6 +163,9 @@ export default function Project() {
             <Link to={`/project/${project.id}/ask`} className="pdf-btn">
               Ask →
             </Link>
+            <Link to={`/project/${project.id}/codes`} className="pdf-btn">
+              Codes →
+            </Link>
             <Link to={`/project/${project.id}/inbox`} className="pdf-btn">
               Inbox →
             </Link>
@@ -220,7 +223,7 @@ export default function Project() {
             </button>
           )}
         </div>
-        <ItemsTable items={items} photosById={photosById} />
+        <ItemsTable items={items} photosById={photosById} projectId={project.id} />
       </section>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { ConsolidatedItem, Photo, Severity, Trade } from '../types'
 import SeverityBadge from './SeverityBadge'
 import BlobImage from './BlobImage'
@@ -9,9 +10,11 @@ const SEVERITY_ORDER: Record<Severity, number> = { high: 0, medium: 1, low: 2 }
 export default function ItemsTable({
   items,
   photosById,
+  projectId,
 }: {
   items: ConsolidatedItem[]
   photosById: Map<string, Photo>
+  projectId?: string
 }) {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all')
   const [tradeFilter, setTradeFilter] = useState<Trade | 'all'>('all')
@@ -82,7 +85,18 @@ export default function ItemsTable({
               <td>
                 <SeverityBadge severity={it.severity} />
               </td>
-              <td>{it.recommended_action}</td>
+              <td>
+                {it.recommended_action}
+                {it.codeRefs && it.codeRefs.length > 0 && projectId && (
+                  <div className="code-refs">
+                    {it.codeRefs.map((ref) => (
+                      <Link key={ref.section} to={`/project/${projectId}/codes`} className="code-ref-chip" title={ref.title}>
+                        {ref.section}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </td>
               <td>
                 <div className="photo-thumbs">
                   {it.sourcePhotoIds.map((pid) => {

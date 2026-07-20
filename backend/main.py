@@ -26,6 +26,12 @@ how they changed since the last round) into a short, prioritized risk
 report a PM can read in under a minute — grouped, ranked, and referencing
 real item ids rather than restating every item as its own risk.
 
+POST /code-search answers a natural-language question about a construction
+code/standard using only the sections of that code sent as context (the
+same context-stuffing pattern as /ask) — grounded, citing the exact section
+and quoting its text, and refusing rather than guessing when the corpus
+doesn't cover the question.
+
 The Anthropic API key can come from:
   1. the X-Anthropic-Key request header (BYO key — used for that request
      only, never logged or stored), or
@@ -526,6 +532,75 @@ Rules:
 - Use the record_answer tool for your response."""
 
 
+class CodeSectionInput(BaseModel):
+    section: str
+    title: str
+    text: str
+
+
+class CodeSearchRequest(BaseModel):
+    question: str
+    sections: list[CodeSectionInput] = []
+
+
+MAX_CODE_SEARCH_SECTIONS = 200
+
+CODE_ANSWER_TOOL = {
+    "name": "record_code_answer",
+    "description": "Record a grounded answer to a question about a construction code or standard.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "answer": {
+                "type": "string",
+                "description": (
+                    "The answer, in plain language, a few sentences. If not covered by the "
+                    "provided sections, explain what section or code would need to be added instead."
+                ),
+            },
+            "grounded": {
+                "type": "boolean",
+                "description": "True only if the answer is fully supported by the provided sections.",
+            },
+            "citations": {
+                "type": "array",
+                "description": "Every section referenced in the answer. Empty if grounded is false.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "section": {"type": "string"},
+                        "title": {"type": "string"},
+                        "quote": {
+                            "type": "string",
+                            "description": "The exact clause from that section's text supporting the answer.",
+                        },
+                    },
+                    "required": ["section", "title", "quote"],
+                },
+            },
+        },
+        "required": ["answer", "grounded", "citations"],
+    },
+}
+
+CODE_SEARCH_SYSTEM_PROMPT = """You are answering questions about a construction code/standard using ONLY
+the sections of that code provided below. This is a small curated subset of a larger code, not the
+whole document — you have no other knowledge of the full code and no general knowledge of construction
+codes beyond what is quoted here.
+
+Rules:
+- Answer ONLY from the provided sections. Never use outside knowledge of OSHA, building codes, or
+  construction regulations in general, even if you believe you know the real requirement.
+- If the question isn't covered by the provided sections, set grounded to false and say plainly that
+  this subset doesn't cover it (do not guess what the fuller code might say).
+- Every fact in your answer must trace to a specific provided section — cite its section number, title,
+  and the exact quote (a real substring of that section's text, not a paraphrase) that supports it. If
+  grounded is false, citations must be empty.
+- Never invent a section number or quote text that is not in the provided sections.
+- Keep the answer to a few sentences.
+- Use the record_code_answer tool for your response."""
+
+
 class RiskReportItem(BaseModel):
     id: str
     title: str
@@ -729,6 +804,26 @@ def ask(
     )
     user_text = f"Project context:\n\n{payload}\n\nQuestion: {question}"
     return _forced_tool_call(api_key, ASK_SYSTEM_PROMPT, user_text, ANSWER_TOOL)
+
+
+@router.post("/code-search")
+def code_search(
+    req: CodeSearchRequest,
+    x_anthropic_key: str | None = Header(default=None),
+) -> dict:
+    api_key = _require_api_key(x_anthropic_key)
+
+    question = req.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="No question asked.")
+    if len(req.sections) > MAX_CODE_SEARCH_SECTIONS:
+        raise HTTPException(
+            status_code=413, detail=f"Too many code sections (max {MAX_CODE_SEARCH_SECTIONS})."
+        )
+
+    payload = json.dumps([s.model_dump() for s in req.sections], indent=2)
+    user_text = f"Code sections:\n\n{payload}\n\nQuestion: {question}"
+    return _forced_tool_call(api_key, CODE_SEARCH_SYSTEM_PROMPT, user_text, CODE_ANSWER_TOOL)
 
 
 @router.post("/risk-report")

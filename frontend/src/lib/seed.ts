@@ -5,7 +5,7 @@ import type { ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '.
 
 // Bump when DEMO_DATA changes shape/content so returning users get the
 // refreshed seed instead of a stale one from an earlier version.
-const DEMO_VERSION = 6
+const DEMO_VERSION = 7
 
 export async function ensureDemoProject(): Promise<void> {
   const db = await getDB()
