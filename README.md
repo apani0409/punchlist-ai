@@ -43,7 +43,7 @@ N photos ──► /analyze (per photo) ──► /aggregate (consolidate, dedup
 email/text ──► /extract ──► editable RFI / change order / notice (Inbox)
 ```
 
-A pre-seeded demo project ships with the app (two inspection rounds, a real diff, three example messages, four example questions, and a generated risk report) so the whole platform is explorable with zero API key.
+A pre-seeded demo project ships with the app (three inspection rounds with real diffs, five example messages, four example questions, and a generated risk report) so the whole platform is explorable with zero API key.
 
 ## Design decisions carried through every endpoint
 

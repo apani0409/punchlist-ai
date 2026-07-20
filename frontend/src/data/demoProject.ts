@@ -499,6 +499,275 @@ const round2: DemoRound = {
   },
 }
 
+// Round 3 closes out both root causes that had been blocking downstream work
+// since Round 1 — the structural repair and the leak trace both complete
+// this round. That unblocks three interior/wall items (none rescheduled
+// yet, so they stay open) and, honestly, the repair work itself turns up
+// two new findings — a common real-world pattern, not tidied away.
+const round3: DemoRound = {
+  id: 'demo-r3',
+  index: 3,
+  name: 'Round 3 — 60-day follow-up',
+  projectSummary:
+    "Third inspection, 30 days after Round 2. Both structural root causes are now resolved: the " +
+    "retaining wall crack was repaired (epoxy injection and reinforcement per the structural " +
+    "engineer's assessment) and the ceiling leak was traced to a failed roof flashing and repaired. " +
+    "The missing electrical panel cover plate was also installed. No high-severity issues remain " +
+    "open — a first for this project. Two new items were noted during the repair work: early " +
+    "hairline cracking in the wall section adjacent to the repair, and ceiling insulation that needs " +
+    "replacing where it was saturated by the leak before it was fixed.",
+  progressNotes:
+    "Real momentum this round: both items that had been blocking downstream work for two rounds " +
+    "are closed, which immediately unblocks the wall's organic-growth cleanup and the ceiling's " +
+    "paint and sheetrock repairs — none are technically blocked anymore, though none have been " +
+    "rescheduled yet. The new hairline crack found during the repair excavation is worth watching " +
+    "closely; if it behaves like the original crack, it should go to the same structural engineer " +
+    "rather than be treated as routine. Recommend closing out the remaining low-priority carryovers " +
+    "(coping, pipe insulation) and scheduling the newly-unblocked interior repairs next round.",
+  photos: [
+    {
+      id: 'demo-r3-cracked-wall',
+      label: `${crackedWall.label} (follow-up)`,
+      photoPath: crackedWall.photo,
+      analysis: {
+        scene_summary:
+          'Follow-up inspection of the retaining wall after the structural repair. Epoxy injection ' +
+          'and reinforcement are visible along the former crack line. The displaced coping and base ' +
+          'efflorescence are unchanged, and a new hairline crack is visible in the adjacent wall section.',
+        items: [
+          {
+            id: 1,
+            title: 'Displaced coping / paver at wall top',
+            description: 'The misaligned paving unit at the wall top still has not been re-bedded.',
+            location_in_photo: 'Top of the wall, upper-left area',
+            trade: 'concrete',
+            severity: 'medium',
+            recommended_action: 'Lift, re-bed and re-level; low cost, unrelated to the structural repair.',
+          },
+          {
+            id: 2,
+            title: 'Organic growth on wall face',
+            description: 'Moss and staining are unchanged; cleanup is no longer blocked but not yet scheduled.',
+            location_in_photo: 'Left half of the wall face',
+            trade: 'general',
+            severity: 'low',
+            recommended_action: 'Clean with a biocide wash — nothing blocks this anymore.',
+          },
+          {
+            id: 3,
+            title: 'Efflorescence near crack base',
+            description: 'Mineral deposits remain from before the repair; the crack itself is no longer active.',
+            location_in_photo: 'Base of the wall, around the repaired section',
+            trade: 'concrete',
+            severity: 'low',
+            recommended_action: 'Clean residual deposits; no further monitoring needed now that the crack is repaired.',
+          },
+          {
+            id: 4,
+            title: 'Early hairline cracking in adjacent wall section',
+            description:
+              'A fine hairline crack has appeared in the wall section next to the repair, visible during the ' +
+              'excavation for the structural work. Too early to tell if it is related or a separate, minor issue.',
+            location_in_photo: 'Wall section immediately right of the repaired area',
+            trade: 'concrete',
+            severity: 'medium',
+            recommended_action:
+              'Monitor for growth over the next round; loop in the structural engineer if it widens.',
+          },
+        ],
+      },
+      twin: TWIN_CRACKED_WALL,
+    },
+    {
+      id: 'demo-r3-basement-wiring',
+      label: `${basementWiring.label} (follow-up)`,
+      photoPath: basementWiring.photo,
+      analysis: {
+        scene_summary:
+          'Follow-up inspection of the basement utility room. The electrical panel cover plate has ' +
+          'been installed; the pipe insulation issue remains open.',
+        items: [
+          {
+            id: 1,
+            title: 'Stained / degraded pipe insulation',
+            description: 'Insulation has not yet been replaced; the leak source above it is unrelated to the ceiling leak and still unconfirmed.',
+            location_in_photo: 'Ceiling, upper-right pipes',
+            trade: 'plumbing',
+            severity: 'medium',
+            recommended_action: 'Replace insulation once its leak source is confirmed and repaired.',
+          },
+        ],
+      },
+      twin: TWIN_BASEMENT_WIRING,
+    },
+    {
+      id: 'demo-r3-water-damage-ceiling',
+      label: `${waterDamageCeiling.label} (follow-up)`,
+      photoPath: waterDamageCeiling.photo,
+      analysis: {
+        scene_summary:
+          'Follow-up inspection of the ceiling. The leak source (a failed roof flashing) has been repaired ' +
+          'and the area is dry. Staining and paint delamination remain, unblocked but not yet redone. Opening ' +
+          'the cavity to trace the leak revealed saturated insulation that needs replacing.',
+        items: [
+          {
+            id: 1,
+            title: 'Extensive paint delamination',
+            description: 'Peeling is unchanged; repainting is no longer blocked but not yet scheduled.',
+            location_in_photo: 'Across the center of the ceiling',
+            trade: 'paint',
+            severity: 'medium',
+            recommended_action: 'Now that the substrate can dry, scrape, prime and repaint.',
+          },
+          {
+            id: 2,
+            title: 'Possible sheetrock damage',
+            description: 'The board still has not been probed for softness; access is no longer blocked.',
+            location_in_photo: 'Stained area, center of the ceiling',
+            trade: 'drywall',
+            severity: 'medium',
+            recommended_action: 'Probe and assess, then repair as needed.',
+          },
+          {
+            id: 3,
+            title: 'Water-stained ceiling insulation requires replacement',
+            description:
+              'Insulation above the ceiling cavity was saturated by the now-repaired leak and has not dried ' +
+              'out; left in place it risks mold regardless of the sheetrock repair.',
+            location_in_photo: 'Above the ceiling cavity, visible where opened for the leak trace',
+            trade: 'general',
+            severity: 'low',
+            recommended_action: 'Replace the saturated insulation batts before closing the cavity back up.',
+          },
+        ],
+      },
+      twin: TWIN_WATER_DAMAGE_CEILING,
+    },
+  ],
+  items: [
+    {
+      id: 'demo-r3-coping',
+      title: 'Displaced coping / paver at wall top',
+      description: 'The misaligned paving unit at the wall top still has not been re-bedded.',
+      location: 'Cracked retaining wall — top of the wall, upper-left area',
+      trade: 'concrete',
+      severity: 'medium',
+      recommended_action: 'Lift, re-bed and re-level; low cost, unrelated to the structural repair.',
+      sourcePhotoIds: ['demo-r3-cracked-wall'],
+    },
+    {
+      id: 'demo-r3-organic-growth',
+      title: 'Organic growth on wall face',
+      description: 'Moss and staining are unchanged; cleanup is no longer blocked but not yet scheduled.',
+      location: 'Cracked retaining wall — left half of the wall face',
+      trade: 'general',
+      severity: 'low',
+      recommended_action: 'Clean with a biocide wash — nothing blocks this anymore.',
+      sourcePhotoIds: ['demo-r3-cracked-wall'],
+    },
+    {
+      id: 'demo-r3-efflorescence',
+      title: 'Efflorescence near crack base',
+      description: 'Mineral deposits remain from before the repair; the crack itself is no longer active.',
+      location: 'Cracked retaining wall — base of the wall, around the repaired section',
+      trade: 'concrete',
+      severity: 'low',
+      recommended_action: 'Clean residual deposits; no further monitoring needed now that the crack is repaired.',
+      sourcePhotoIds: ['demo-r3-cracked-wall'],
+    },
+    {
+      id: 'demo-r3-adjacent-crack',
+      title: 'Early hairline cracking in adjacent wall section',
+      description:
+        'A fine hairline crack has appeared in the wall section next to the repair, visible during the ' +
+        'excavation for the structural work. Too early to tell if it is related or a separate, minor issue.',
+      location: 'Cracked retaining wall — wall section immediately right of the repaired area',
+      trade: 'concrete',
+      severity: 'medium',
+      recommended_action: 'Monitor for growth over the next round; loop in the structural engineer if it widens.',
+      sourcePhotoIds: ['demo-r3-cracked-wall'],
+    },
+    {
+      id: 'demo-r3-pipe-insulation',
+      title: 'Stained / degraded pipe insulation',
+      description: 'Insulation has not yet been replaced; the leak source above it is unrelated to the ceiling leak and still unconfirmed.',
+      location: 'Basement utility room — ceiling, upper-right pipes',
+      trade: 'plumbing',
+      severity: 'medium',
+      recommended_action: 'Replace insulation once its leak source is confirmed and repaired.',
+      sourcePhotoIds: ['demo-r3-basement-wiring'],
+    },
+    {
+      id: 'demo-r3-paint-delam',
+      title: 'Extensive paint delamination',
+      description: 'Peeling is unchanged; repainting is no longer blocked but not yet scheduled.',
+      location: 'Water-damaged ceiling — across the center of the ceiling',
+      trade: 'paint',
+      severity: 'medium',
+      recommended_action: 'Now that the substrate can dry, scrape, prime and repaint.',
+      sourcePhotoIds: ['demo-r3-water-damage-ceiling'],
+    },
+    {
+      id: 'demo-r3-sheetrock',
+      title: 'Possible sheetrock damage',
+      description: 'The board still has not been probed for softness; access is no longer blocked.',
+      location: 'Water-damaged ceiling — stained area, center of the ceiling',
+      trade: 'drywall',
+      severity: 'medium',
+      recommended_action: 'Probe and assess, then repair as needed.',
+      sourcePhotoIds: ['demo-r3-water-damage-ceiling'],
+    },
+    {
+      id: 'demo-r3-ceiling-insulation',
+      title: 'Water-stained ceiling insulation requires replacement',
+      description:
+        'Insulation above the ceiling cavity was saturated by the now-repaired leak and has not dried out; ' +
+        'left in place it risks mold regardless of the sheetrock repair.',
+      location: 'Water-damaged ceiling — above the ceiling cavity, visible where opened for the leak trace',
+      trade: 'general',
+      severity: 'low',
+      recommended_action: 'Replace the saturated insulation batts before closing the cavity back up.',
+      sourcePhotoIds: ['demo-r3-water-damage-ceiling'],
+    },
+  ],
+  diff: {
+    closed: ['demo-r2-crack', 'demo-r2-water-staining', 'demo-r2-cover-plate'],
+    persistent: [
+      {
+        previousId: 'demo-r2-coping',
+        currentId: 'demo-r3-coping',
+        note: 'Still not re-bedded — low priority, repeatedly deprioritized',
+      },
+      {
+        previousId: 'demo-r2-organic-growth',
+        currentId: 'demo-r3-organic-growth',
+        note: 'Unblocked now that the structural repair is complete; cleanup not yet scheduled',
+      },
+      {
+        previousId: 'demo-r2-efflorescence',
+        currentId: 'demo-r3-efflorescence',
+        note: 'Structural repair complete; residual mineral deposits still need cleaning',
+      },
+      {
+        previousId: 'demo-r2-pipe-insulation',
+        currentId: 'demo-r3-pipe-insulation',
+        note: "Unchanged — this pipe run's own leak source is still unconfirmed",
+      },
+      {
+        previousId: 'demo-r2-paint-delam',
+        currentId: 'demo-r3-paint-delam',
+        note: 'Unblocked now that the ceiling leak is fixed; repainting not yet scheduled',
+      },
+      {
+        previousId: 'demo-r2-sheetrock',
+        currentId: 'demo-r3-sheetrock',
+        note: 'Unblocked now that the ceiling leak is fixed; probe not yet scheduled',
+      },
+    ],
+    new: ['demo-r3-adjacent-crack', 'demo-r3-ceiling-insulation'],
+  },
+}
+
 export interface DemoDocument {
   id: string
   status: DocumentStatus
@@ -599,11 +868,62 @@ const DEMO_DOCUMENTS: DemoDocument[] = [
         'confirm the revised pour date once delivery is reconfirmed.',
     }),
   },
+  // These two tie directly into Round 3's punch-list narrative (the crack
+  // repair and the new hairline crack found while excavating for it) —
+  // showing Document Intelligence and the punch list referencing the same
+  // real-world event, not two disconnected demo features.
+  {
+    id: 'demo-doc-co-repair',
+    status: 'reviewed',
+    sourceText:
+      "Following the structural engineer's report, we're proceeding with epoxy injection and " +
+      'carbon fiber reinforcement on the retaining wall crack. This will run $4,200 for materials ' +
+      'and labor, and we need about 2 days to complete it before backfilling. Let us know if you ' +
+      'want us to proceed — Sam',
+    extracted: blankExtracted({
+      type: 'change_order',
+      priority: 'medium',
+      summary:
+        'Subcontractor requests a $4,200 change order for epoxy injection and carbon fiber ' +
+        'reinforcement to repair the retaining wall crack, needing 2 days before backfilling.',
+      subject: 'Retaining wall crack repair — epoxy injection and carbon fiber reinforcement',
+      co_description:
+        'Epoxy injection and carbon fiber reinforcement to repair the vertical crack in the ' +
+        "retaining wall, per the structural engineer's assessment.",
+      co_trade: 'concrete',
+      co_cost_amount: 4200,
+      co_cost_currency: 'USD',
+      co_schedule_impact_days: 2,
+      co_initiated_by: 'Sam (subcontractor)',
+    }),
+  },
+  {
+    id: 'demo-doc-rfi-adjacent-crack',
+    status: 'reviewed',
+    sourceText:
+      'Hey, while we were excavating for the wall repair we noticed a small hairline crack ' +
+      "starting in the section right next to it. Doesn't look serious but wanted to flag it — do " +
+      'you want the structural engineer to look at this one too while they’re already on site, or ' +
+      'should we just keep an eye on it? — Sam',
+    extracted: blankExtracted({
+      type: 'rfi',
+      priority: 'medium',
+      summary:
+        'A new hairline crack was found adjacent to the retaining wall repair during excavation; ' +
+        "asking whether it needs its own structural review or can be monitored.",
+      subject: 'New hairline crack adjacent to retaining wall repair — assess or monitor?',
+      rfi_question:
+        'Should the structural engineer assess the newly-found hairline crack adjacent to the ' +
+        'repair while already on site, or is monitoring sufficient for now?',
+      rfi_discipline: 'concrete',
+      rfi_reference: 'Retaining wall structural repair (in progress)',
+    }),
+  },
 ]
 
 export const DEMO_DATA = {
   projectName: 'Riverside Build — Demo Project',
-  rounds: [round1, round2],
+  rounds: [round1, round2, round3],
   documents: DEMO_DOCUMENTS,
 }
 
@@ -617,14 +937,16 @@ export const DEMO_SUGGESTED_QUESTIONS: { question: string; answer: AskResponse }
     question: 'What high-severity issues are still open?',
     answer: {
       answer:
-        'Two high-severity items are still open as of Round 2: the vertical crack through the ' +
-        'retaining wall, which is still awaiting a structural assessment, and the water staining ' +
-        'on the ceiling, whose leak source has still not been located and is now blocking two ' +
-        'dependent repairs (paint and sheetrock).',
+        'None, as of Round 3 — a first for this project. The two high-severity items that were open ' +
+        'in Round 2 are both resolved: the retaining wall crack was repaired (epoxy injection and ' +
+        'reinforcement) and the ceiling leak source, a failed roof flashing, was fixed. The highest-severity ' +
+        "items open now are medium: a new hairline crack found during the repair excavation, and two " +
+        'interior repairs that are unblocked but not yet rescheduled.',
       grounded: true,
       citations: [
-        { kind: 'item', id: 'demo-r2-crack', label: 'Vertical crack through retaining wall' },
-        { kind: 'item', id: 'demo-r2-water-staining', label: 'Water staining indicates leak above' },
+        { kind: 'item', id: 'demo-r2-crack', label: 'Vertical crack through retaining wall (resolved)' },
+        { kind: 'item', id: 'demo-r2-water-staining', label: 'Water staining indicates leak above (resolved)' },
+        { kind: 'item', id: 'demo-r3-adjacent-crack', label: 'Early hairline cracking in adjacent wall section' },
       ],
     },
   },
@@ -632,12 +954,13 @@ export const DEMO_SUGGESTED_QUESTIONS: { question: string; answer: AskResponse }
     question: 'What is the total change-order cost impact so far?',
     answer: {
       answer:
-        'One change order is on record: widening the foundation wall from 12" to 16" for ' +
-        'additional concrete and rebar, at a stated cost of $3,000. No change orders are ' +
-        'currently pending a cost figure.',
+        'Two change orders are on record, totaling $7,200: $3,000 to widen the foundation wall from ' +
+        '12" to 16", and $4,200 for the epoxy injection and carbon fiber reinforcement that repaired ' +
+        'the retaining wall crack in Round 3. No change orders are currently pending a cost figure.',
       grounded: true,
       citations: [
         { kind: 'document', id: 'demo-doc-co', label: 'Foundation wall thickness change — 12" to 16"' },
+        { kind: 'document', id: 'demo-doc-co-repair', label: 'Retaining wall crack repair — epoxy injection and carbon fiber reinforcement' },
       ],
     },
   },
@@ -645,13 +968,15 @@ export const DEMO_SUGGESTED_QUESTIONS: { question: string; answer: AskResponse }
     question: 'Has the basement wiring issue been resolved?',
     answer: {
       answer:
-        'Partially. The originally unsecured cable was closed in Round 2 — it was secured on ' +
-        'site. But a new issue was flagged in that same re-inspection: one of the electrical ' +
-        "panels is missing its cover plate, so the basement electrical work isn't fully clear yet.",
+        'The electrical side is fully resolved: the unsecured cable was closed in Round 2, and the ' +
+        'missing panel cover plate flagged that same round was installed in Round 3. One basement item ' +
+        "is still open, but it's plumbing, not electrical — degraded pipe insulation, waiting on its own " +
+        "(separate) leak source to be confirmed.",
       grounded: true,
       citations: [
         { kind: 'item', id: 'demo-r1-demo-basement-wiring-1', label: 'Unsecured cable hanging to floor (closed)' },
-        { kind: 'item', id: 'demo-r2-cover-plate', label: 'Missing panel cover plate' },
+        { kind: 'item', id: 'demo-r2-cover-plate', label: 'Missing panel cover plate (closed)' },
+        { kind: 'item', id: 'demo-r3-pipe-insulation', label: 'Stained / degraded pipe insulation' },
       ],
     },
   },
@@ -669,56 +994,54 @@ export const DEMO_SUGGESTED_QUESTIONS: { question: string; answer: AskResponse }
 ]
 
 // Pre-computed risk report for the demo project's dashboard, grounded in
-// Round 2's nine open items — every reference_ids entry below is a real
-// consolidated-item id from round2.items above.
+// Round 3's eight open items — every reference_ids entry below is a real
+// consolidated-item id from round3.items above.
 export const DEMO_RISK_REPORT: RiskReportResponse = {
   headline:
-    'Two unresolved root causes — the ceiling leak source and the retaining wall crack — are ' +
-    'now blocking five of the nine open items; resolving those two unblocks the rest of the ' +
-    'project faster than working the list top-down.',
+    'Both structural root causes are resolved as of Round 3 — for the first time, no high-severity ' +
+    'items are open. The top remaining risk is a new hairline crack found during the repair ' +
+    "excavation; it's worth watching closely so it doesn't become the project's next root cause.",
   risks: [
     {
-      title: 'Ceiling leak source still unlocated — now blocking two dependent repairs',
-      severity: 'high',
-      why:
-        "The water-damage source hasn't been traced across two inspection rounds, and it's now " +
-        "the stated reason two other items (paint delamination, sheetrock probe) can't proceed. " +
-        'This is the item most likely to cascade into further delay.',
-      reference_ids: ['demo-r2-water-staining', 'demo-r2-paint-delam', 'demo-r2-sheetrock'],
-      recommended_action:
-        'Prioritize a plumbing/roofing trace to locate the leak source before the next ' +
-        'inspection round — this unblocks two downstream items at once.',
-    },
-    {
-      title: 'Retaining wall crack unresolved — structural assessment still pending',
-      severity: 'high',
-      why:
-        'The crack has been open since Round 1 with no visible change. A structural engineer has ' +
-        'not yet been engaged, and the coping repair, organic-growth cleanup, and newly-noted ' +
-        'efflorescence on the same wall are all effectively waiting on this one decision.',
-      reference_ids: ['demo-r2-crack', 'demo-r2-coping', 'demo-r2-organic-growth', 'demo-r2-efflorescence'],
-      recommended_action:
-        'Schedule the structural assessment — three other wall items are blocked on this decision.',
-    },
-    {
-      title: 'Exposed live electrical components in the basement',
+      title: 'New hairline crack found adjacent to the repaired wall section',
       severity: 'medium',
       why:
-        'A missing panel cover plate was newly flagged this round, leaving live components ' +
-        'exposed. This is a safety item that should close quickly rather than carry into ' +
-        'another round.',
-      reference_ids: ['demo-r2-cover-plate'],
+        'Surfaced during the excavation for the structural repair, not from routine inspection. Too ' +
+        'early to tell if it shares a cause with the original crack or is unrelated — but it is the ' +
+        'only item this round with a plausible path to becoming another multi-round blocker.',
+      reference_ids: ['demo-r3-adjacent-crack'],
       recommended_action:
-        'Install the correct cover plate before the room is signed off — low cost, no reason to wait.',
+        'Photograph and measure it now to establish a baseline; loop in the same structural engineer ' +
+        'if it visibly widens by the next round.',
     },
     {
-      title: 'Pipe insulation replacement pending leak confirmation',
+      title: 'Two interior repairs are unblocked but not yet rescheduled',
       severity: 'medium',
       why:
-        'Degraded insulation in the basement utility room is a lower-urgency item tied to the ' +
-        'same undiagnosed ceiling leak.',
-      reference_ids: ['demo-r2-pipe-insulation'],
-      recommended_action: 'Replace once the leak source is confirmed and repaired — no separate action needed before then.',
+        'The ceiling leak that had held up the paint and sheetrock repairs for two rounds is fixed, ' +
+        "but neither item has moved to a scheduled state yet — the risk now is coordination " +
+        'stalling, not a technical blocker.',
+      reference_ids: ['demo-r3-paint-delam', 'demo-r3-sheetrock'],
+      recommended_action: 'Schedule both repairs now — nothing technical is stopping either one.',
+    },
+    {
+      title: 'Saturated ceiling insulation found during the leak trace',
+      severity: 'low',
+      why:
+        'Opening the ceiling cavity to find the leak source exposed insulation that stayed wet long ' +
+        'enough to need replacing, independent of the sheetrock/paint work above it.',
+      reference_ids: ['demo-r3-ceiling-insulation'],
+      recommended_action: 'Replace the saturated batts before the cavity is closed back up, to avoid trapping moisture.',
+    },
+    {
+      title: 'Remaining low-priority carryovers',
+      severity: 'low',
+      why:
+        'Four items are open but none individually urgent: the wall coping, organic growth, and ' +
+        'base efflorescence are cosmetic/low-cost now that the structural cause is fixed, and the ' +
+        "basement pipe insulation is waiting on its own (separate, unconfirmed) leak source.",
+      reference_ids: ['demo-r3-coping', 'demo-r3-organic-growth', 'demo-r3-efflorescence', 'demo-r3-pipe-insulation'],
+      recommended_action: 'Batch these into a single closeout punch-list pass rather than tracking individually.',
     },
   ],
 }
