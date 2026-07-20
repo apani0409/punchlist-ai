@@ -34,6 +34,7 @@ The Anthropic API key can come from:
 
 import json
 import os
+from typing import Literal, get_args
 
 import anthropic
 from fastapi import APIRouter, FastAPI, Header, HTTPException
@@ -47,6 +48,19 @@ MAX_IMAGE_MB = 5
 MAX_AGGREGATE_PHOTOS = 60
 MAX_AGGREGATE_ITEMS = 300
 
+# Single source of truth for the trade/severity vocabulary — used both as
+# Pydantic field types (so a request with an unknown value is rejected
+# at validation, not silently accepted as a bare string) and, via
+# get_args(), to build the matching JSON-schema enum lists below.
+TradeLiteral = Literal[
+    "electrical", "plumbing", "drywall", "paint", "concrete", "carpentry", "safety", "general"
+]
+SeverityLiteral = Literal["low", "medium", "high"]
+# For JSON-schema "enum" lists (tool definitions below) — derived from the
+# same Literal so there's one place to add/rename a trade, not three.
+_TRADE_ENUM = list(get_args(TradeLiteral))
+_SEVERITY_ENUM = list(get_args(SeverityLiteral))
+
 # Routes live on a router so deployments can mount them under a prefix
 # (e.g. /api on Vercel) while local dev serves them at the root.
 router = APIRouter()
@@ -55,16 +69,18 @@ router = APIRouter()
 def _forced_tool_call(
     api_key: str,
     system: str,
-    user_text: str,
+    content: str | list[dict],
     tool: dict,
     *,
     model: str = TEXT_MODEL,
     max_tokens: int = 4096,
 ) -> dict:
-    """Run a text-only Claude call that must answer via the given tool.
+    """Run a Claude call that must answer via the given tool.
 
-    Shared by /aggregate and /diff (and any future text-only endpoint) so
-    they don't each re-implement client setup and error mapping.
+    `content` is either plain text (the text-only endpoints: /aggregate,
+    /diff, /extract, /ask, /risk-report) or a content-block list (/analyze's
+    image + instruction). Shared by every endpoint below so none of them
+    re-implement client setup and error mapping.
     """
     client = anthropic.Anthropic(api_key=api_key)
     try:
@@ -74,7 +90,7 @@ def _forced_tool_call(
             system=system,
             tools=[tool],
             tool_choice={"type": "tool", "name": tool["name"]},
-            messages=[{"role": "user", "content": user_text}],
+            messages=[{"role": "user", "content": content}],
         )
     except anthropic.AuthenticationError:
         raise HTTPException(status_code=401, detail="Invalid Anthropic API key.")
@@ -125,20 +141,8 @@ PUNCH_LIST_TOOL = {
                             "type": "string",
                             "description": "Where in the photo the issue is (e.g. 'left wall, near the window'). Textual only.",
                         },
-                        "trade": {
-                            "type": "string",
-                            "enum": [
-                                "electrical",
-                                "plumbing",
-                                "drywall",
-                                "paint",
-                                "concrete",
-                                "carpentry",
-                                "safety",
-                                "general",
-                            ],
-                        },
-                        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+                        "trade": {"type": "string", "enum": _TRADE_ENUM},
+                        "severity": {"type": "string", "enum": _SEVERITY_ENUM},
                         "recommended_action": {"type": "string"},
                     },
                     "required": [
@@ -172,11 +176,23 @@ Rules:
 - Use the record_punch_list tool for your answer."""
 
 
+class PunchItemInput(BaseModel):
+    """Mirrors PUNCH_LIST_TOOL's item schema — what /analyze returns per photo."""
+
+    id: int
+    title: str
+    description: str
+    location_in_photo: str
+    trade: TradeLiteral
+    severity: SeverityLiteral
+    recommended_action: str
+
+
 class AggregatePhotoInput(BaseModel):
     photo_id: str
     label: str
     scene_summary: str
-    items: list[dict]  # PunchItem-shaped dicts, as returned by /analyze
+    items: list[PunchItemInput]
 
 
 class AggregateRequest(BaseModel):
@@ -213,20 +229,8 @@ CONSOLIDATED_LIST_TOOL = {
                             "type": "string",
                             "description": "Project-level location (e.g. 'Basement utility room, west wall'). Textual only.",
                         },
-                        "trade": {
-                            "type": "string",
-                            "enum": [
-                                "electrical",
-                                "plumbing",
-                                "drywall",
-                                "paint",
-                                "concrete",
-                                "carpentry",
-                                "safety",
-                                "general",
-                            ],
-                        },
-                        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+                        "trade": {"type": "string", "enum": _TRADE_ENUM},
+                        "severity": {"type": "string", "enum": _SEVERITY_ENUM},
                         "recommended_action": {"type": "string"},
                         "source_photos": {
                             "type": "array",
@@ -280,8 +284,8 @@ class DiffItemInput(BaseModel):
     title: str
     description: str
     location: str
-    trade: str
-    severity: str
+    trade: TradeLiteral
+    severity: SeverityLiteral
 
 
 class DiffRequest(BaseModel):
@@ -346,17 +350,6 @@ class ExtractRequest(BaseModel):
 
 
 MAX_EXTRACT_CHARS = 8000
-
-_TRADE_ENUM = [
-    "electrical",
-    "plumbing",
-    "drywall",
-    "paint",
-    "concrete",
-    "carpentry",
-    "safety",
-    "general",
-]
 
 DOCUMENT_TOOL = {
     "name": "record_document",
@@ -445,8 +438,8 @@ class AskContextItem(BaseModel):
     title: str
     description: str
     location: str
-    trade: str
-    severity: str
+    trade: TradeLiteral
+    severity: SeverityLiteral
     round_index: int
 
 
@@ -538,8 +531,8 @@ class RiskReportItem(BaseModel):
     title: str
     description: str
     location: str
-    trade: str
-    severity: str
+    trade: TradeLiteral
+    severity: SeverityLiteral
 
 
 class RiskReportDiffSummary(BaseModel):
@@ -574,7 +567,7 @@ RISK_REPORT_TOOL = {
                     "type": "object",
                     "properties": {
                         "title": {"type": "string"},
-                        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+                        "severity": {"type": "string", "enum": _SEVERITY_ENUM},
                         "why": {
                             "type": "string",
                             "description": "Why this matters now — e.g. blocks other work, safety, open multiple rounds.",
@@ -629,44 +622,14 @@ def analyze(
     if req.media_type not in ("image/jpeg", "image/png", "image/webp"):
         raise HTTPException(status_code=415, detail="Use a JPEG, PNG or WebP image.")
 
-    client = anthropic.Anthropic(api_key=api_key)
-    try:
-        message = client.messages.create(
-            model=MODEL,
-            max_tokens=2048,
-            system=SYSTEM_PROMPT,
-            tools=[PUNCH_LIST_TOOL],
-            tool_choice={"type": "tool", "name": "record_punch_list"},
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": req.media_type,
-                                "data": req.image_base64,
-                            },
-                        },
-                        {
-                            "type": "text",
-                            "text": "Inspect this photo and produce the punch list.",
-                        },
-                    ],
-                }
-            ],
-        )
-    except anthropic.AuthenticationError:
-        raise HTTPException(status_code=401, detail="Invalid Anthropic API key.")
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=502, detail=f"Anthropic API error: {e.__class__.__name__}")
-
-    for block in message.content:
-        if block.type == "tool_use" and block.name == "record_punch_list":
-            return block.input
-
-    raise HTTPException(status_code=502, detail="Model did not return a punch list.")
+    content = [
+        {
+            "type": "image",
+            "source": {"type": "base64", "media_type": req.media_type, "data": req.image_base64},
+        },
+        {"type": "text", "text": "Inspect this photo and produce the punch list."},
+    ]
+    return _forced_tool_call(api_key, SYSTEM_PROMPT, content, PUNCH_LIST_TOOL, model=MODEL, max_tokens=2048)
 
 
 @router.post("/aggregate")

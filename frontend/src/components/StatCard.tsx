@@ -5,6 +5,7 @@ export default function StatCard({
   deltaFormat = 'number',
   invertDelta = false,
   tone,
+  caption,
 }: {
   label: string
   value: string | number
@@ -14,6 +15,9 @@ export default function StatCard({
   // score ↑, open items ↑) — flips which color reads as "good".
   invertDelta?: boolean
   tone?: 'high'
+  // Short formula/definition shown under the value — for metrics (like a
+  // weighted risk score) whose number alone doesn't explain itself.
+  caption?: string
 }) {
   const hasDelta = delta !== undefined && delta !== null
   const isFlat = hasDelta && Math.abs(delta!) < 0.005
@@ -30,6 +34,7 @@ export default function StatCard({
         </span>
       )}
       {hasDelta && isFlat && <span className="stat-delta stat-delta-flat">— no change</span>}
+      {caption && <span className="stat-caption">{caption}</span>}
     </div>
   )
 }

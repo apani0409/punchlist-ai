@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { riskReport, type RiskReportResponse } from '../api'
 import ApiKeyField, { useApiKey } from './ApiKeyField'
 import SeverityBadge from './SeverityBadge'
@@ -17,6 +17,15 @@ export default function RiskReportPanel({
   const [report, setReport] = useState<RiskReportResponse | null>(cannedReport ?? null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // `useState`'s initializer only runs on mount — if this component instance
+  // is ever reused across a projectId-only navigation (React Router can do
+  // this for same-route param changes), reset explicitly so a stale report
+  // from the previous project never lingers.
+  useEffect(() => {
+    setReport(cannedReport ?? null)
+    setError(null)
+  }, [cannedReport])
 
   async function generate() {
     if (!apiKey.trim()) {

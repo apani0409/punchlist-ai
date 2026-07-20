@@ -1,5 +1,9 @@
 import type { ConsolidatedItem, PunchListResult } from './types'
 
+function sanitizeFilename(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
 export async function exportPdf(result: PunchListResult, photoLabel: string) {
   // Loaded on demand so the PDF library stays out of the initial bundle.
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([
@@ -67,7 +71,7 @@ export async function exportPdf(result: PunchListResult, photoLabel: string) {
     doc.internal.pageSize.height - 8,
   )
 
-  doc.save(`punchlist-${photoLabel.toLowerCase().replace(/\s+/g, '-')}.pdf`)
+  doc.save(`punchlist-${sanitizeFilename(photoLabel)}.pdf`)
 }
 
 export async function exportProjectPdf(projectName: string, roundName: string, items: ConsolidatedItem[]) {
@@ -135,6 +139,5 @@ export async function exportProjectPdf(projectName: string, roundName: string, i
     doc.internal.pageSize.height - 8,
   )
 
-  const fileSafe = `${projectName}-${roundName}`.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-  doc.save(`punchlist-${fileSafe}.pdf`)
+  doc.save(`punchlist-${sanitizeFilename(`${projectName}-${roundName}`)}.pdf`)
 }

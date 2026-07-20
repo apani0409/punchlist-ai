@@ -398,21 +398,53 @@ td.num {
 }
 
 .project-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: left;
+  position: relative;
   background: var(--card-raised);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 16px;
-  cursor: pointer;
   transition: border-color 0.15s, transform 0.15s;
 }
 
 .project-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.project-card-clickable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 16px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.project-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.project-delete-btn:hover {
+  background: var(--high-bg);
+  color: var(--high);
 }
 
 .project-card-head {
@@ -830,6 +862,12 @@ td.num {
 
 .stat-delta-flat {
   color: var(--ink-faint);
+}
+
+.stat-caption {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  margin-top: 2px;
 }
 
 .dashboard-grid {

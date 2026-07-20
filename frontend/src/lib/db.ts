@@ -53,6 +53,12 @@ export function getDB(): Promise<IDBPDatabase<PunchListDB>> {
           documents.createIndex('by-project', 'projectId')
         }
       },
+      blocking() {
+        // Another tab is opening a newer schema version; release this
+        // connection so that tab's upgrade can proceed instead of hanging
+        // indefinitely on "Loading…" behind this one.
+        void dbPromise?.then((db) => db.close())
+      },
     })
   }
   return dbPromise

@@ -26,7 +26,8 @@ export default function QuickAnalyze() {
     const fromHash = new URLSearchParams(window.location.hash.slice(1)).get('sample')
     const id = fromQuery ?? fromHash
     if (id && SAMPLES.some((s) => s.id === id)) selectSample(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally mount-only: re-running on every `selectSample` identity
+    // change would fight the user's own sample picks after the deep link.
   }, [])
 
   const trades = useMemo(() => {

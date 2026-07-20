@@ -243,9 +243,9 @@ const round2: DemoRound = {
           {
             id: 2,
             title: 'Missing panel cover plate',
-            description: 'One of the electrical panels is missing its cover plate, exposing live components.',
+            description: 'One of the electrical panels is missing its cover plate, exposing live components — a safety hazard, not just a finish item.',
             location_in_photo: 'Center wall, gray control boxes',
-            trade: 'electrical',
+            trade: 'safety',
             severity: 'medium',
             recommended_action: 'Install an appropriately rated cover plate before the room is signed off.',
           },
@@ -384,9 +384,9 @@ const round2: DemoRound = {
     {
       id: 'demo-r2-cover-plate',
       title: 'Missing panel cover plate',
-      description: 'One of the electrical panels is missing its cover plate, exposing live components.',
+      description: 'One of the electrical panels is missing its cover plate, exposing live components — a safety hazard, not just a finish item.',
       location: 'Basement utility room — center wall, gray control boxes',
-      trade: 'electrical',
+      trade: 'safety',
       severity: 'medium',
       recommended_action: 'Install an appropriately rated cover plate before the room is signed off.',
       sourcePhotoIds: ['demo-r2-basement-wiring'],

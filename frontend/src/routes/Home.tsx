@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listProjects, listRoundsByProject, putProject, putRound } from '../lib/db'
+import { deleteProject, listProjects, listRoundsByProject, putProject, putRound } from '../lib/db'
 import { ensureDemoProject } from '../lib/seed'
 import type { Project, Round } from '../types'
 
@@ -48,6 +48,15 @@ export default function Home() {
     navigate(`/project/${project.id}`)
   }
 
+  async function handleDelete(id: string, name: string) {
+    const ok = window.confirm(
+      `Delete "${name}"? This removes all its photos, items, rounds and documents from this browser.`,
+    )
+    if (!ok) return
+    await deleteProject(id)
+    await refresh()
+  }
+
   return (
     <div className="page">
       <section className="panel">
@@ -80,15 +89,30 @@ export default function Home() {
         {!loading && projects.length === 0 && <p className="summary">No projects yet.</p>}
         <div className="project-grid">
           {projects.map((p) => (
-            <button key={p.id} className="project-card" onClick={() => navigate(`/project/${p.id}`)}>
-              <div className="project-card-head">
-                <span className="project-name">{p.name}</span>
-                {p.seeded && <span className="demo-badge">Demo</span>}
-              </div>
-              <span className="project-meta">
-                {roundCounts[p.id] ?? 0} round{(roundCounts[p.id] ?? 0) === 1 ? '' : 's'}
-              </span>
-            </button>
+            <div key={p.id} className="project-card">
+              <button className="project-card-clickable" onClick={() => navigate(`/project/${p.id}`)}>
+                <div className="project-card-head">
+                  <span className="project-name">{p.name}</span>
+                  {p.seeded && <span className="demo-badge">Demo</span>}
+                </div>
+                <span className="project-meta">
+                  {roundCounts[p.id] ?? 0} round{(roundCounts[p.id] ?? 0) === 1 ? '' : 's'}
+                </span>
+              </button>
+              {!p.seeded && (
+                <button
+                  className="project-delete-btn"
+                  aria-label={`Delete ${p.name}`}
+                  title={`Delete ${p.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void handleDelete(p.id, p.name)
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </section>

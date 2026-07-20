@@ -82,7 +82,13 @@ export default function Dashboard() {
             delta={metrics.closureRateDelta}
             deltaFormat="pp"
           />
-          <StatCard label="Risk score" value={metrics.riskScore} delta={metrics.riskScoreDelta} invertDelta />
+          <StatCard
+            label="Risk score"
+            value={metrics.riskScore}
+            delta={metrics.riskScoreDelta}
+            invertDelta
+            caption="High×5 + Medium×2 + Low×1, open items only"
+          />
         </div>
       </section>
 
