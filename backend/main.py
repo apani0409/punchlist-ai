@@ -1,7 +1,11 @@
 """PunchList AI backend.
 
-One endpoint: POST /analyze takes a construction-site photo (base64) and
-returns a structured punch list produced by a Claude vision model.
+POST /analyze takes a construction-site photo (base64) and returns a
+structured punch list produced by a Claude vision model.
+
+POST /aggregate takes the per-photo punch lists for a project (or one
+inspection round) and consolidates them into a single project-level list,
+merging duplicate defects seen in multiple photos.
 
 The Anthropic API key can come from:
   1. the X-Anthropic-Key request header (BYO key — used for that request
@@ -9,6 +13,7 @@ The Anthropic API key can come from:
   2. the ANTHROPIC_API_KEY environment variable (local dev / self-host).
 """
 
+import json
 import os
 
 import anthropic
@@ -17,11 +22,61 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 MODEL = os.environ.get("PUNCHLIST_MODEL", "claude-sonnet-5")
+# Text-only calls (aggregate, diff) can use a cheaper model; defaults to MODEL.
+TEXT_MODEL = os.environ.get("PUNCHLIST_TEXT_MODEL", MODEL)
 MAX_IMAGE_MB = 5
+MAX_AGGREGATE_PHOTOS = 60
+MAX_AGGREGATE_ITEMS = 300
 
 # Routes live on a router so deployments can mount them under a prefix
 # (e.g. /api on Vercel) while local dev serves them at the root.
 router = APIRouter()
+
+
+def _forced_tool_call(
+    api_key: str,
+    system: str,
+    user_text: str,
+    tool: dict,
+    *,
+    model: str = TEXT_MODEL,
+    max_tokens: int = 4096,
+) -> dict:
+    """Run a text-only Claude call that must answer via the given tool.
+
+    Shared by /aggregate and /diff (and any future text-only endpoint) so
+    they don't each re-implement client setup and error mapping.
+    """
+    client = anthropic.Anthropic(api_key=api_key)
+    try:
+        message = client.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            system=system,
+            tools=[tool],
+            tool_choice={"type": "tool", "name": tool["name"]},
+            messages=[{"role": "user", "content": user_text}],
+        )
+    except anthropic.AuthenticationError:
+        raise HTTPException(status_code=401, detail="Invalid Anthropic API key.")
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Anthropic API error: {e.__class__.__name__}")
+
+    for block in message.content:
+        if block.type == "tool_use" and block.name == tool["name"]:
+            return block.input
+
+    raise HTTPException(status_code=502, detail="Model did not return the expected tool call.")
+
+
+def _require_api_key(x_anthropic_key: str | None) -> str:
+    api_key = x_anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="No API key. Send one in the X-Anthropic-Key header (it is used for this request only).",
+        )
+    return api_key
 
 
 class AnalyzeRequest(BaseModel):
@@ -98,6 +153,109 @@ Rules:
 - Use the record_punch_list tool for your answer."""
 
 
+class AggregatePhotoInput(BaseModel):
+    photo_id: str
+    label: str
+    scene_summary: str
+    items: list[dict]  # PunchItem-shaped dicts, as returned by /analyze
+
+
+class AggregateRequest(BaseModel):
+    photos: list[AggregatePhotoInput]
+
+
+CONSOLIDATED_LIST_TOOL = {
+    "name": "record_consolidated_list",
+    "description": "Record the project-level punch list consolidated from multiple photos.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "project_summary": {
+                "type": "string",
+                "description": "One or two sentences describing the overall state of the project across all photos.",
+            },
+            "progress_notes": {
+                "type": "string",
+                "description": (
+                    "Two or three sentences of qualitative construction-progress observations "
+                    "visible across the photos (e.g. framing stage, finishes underway). No "
+                    "percentages or estimates — only what is directly observable."
+                ),
+            },
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "title": {"type": "string", "description": "Short issue name, max ~8 words."},
+                        "description": {"type": "string", "description": "What is wrong and why it matters."},
+                        "location": {
+                            "type": "string",
+                            "description": "Project-level location (e.g. 'Basement utility room, west wall'). Textual only.",
+                        },
+                        "trade": {
+                            "type": "string",
+                            "enum": [
+                                "electrical",
+                                "plumbing",
+                                "drywall",
+                                "paint",
+                                "concrete",
+                                "carpentry",
+                                "safety",
+                                "general",
+                            ],
+                        },
+                        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+                        "recommended_action": {"type": "string"},
+                        "source_photos": {
+                            "type": "array",
+                            "description": "Which input photo/item(s) this consolidated entry was built from.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "photo_id": {"type": "string"},
+                                    "item_id": {"type": "integer"},
+                                },
+                                "required": ["photo_id", "item_id"],
+                            },
+                        },
+                    },
+                    "required": [
+                        "id",
+                        "title",
+                        "description",
+                        "location",
+                        "trade",
+                        "severity",
+                        "recommended_action",
+                        "source_photos",
+                    ],
+                },
+            },
+        },
+        "required": ["project_summary", "progress_notes", "items"],
+    },
+}
+
+AGGREGATE_SYSTEM_PROMPT = """You are consolidating punch list items from multiple photos of the
+same construction project into a single project-level punch list.
+
+Rules:
+- If the same physical defect appears in more than one photo (or more than once in the
+  input), merge it into one consolidated item and list every source photo/item it came
+  from in source_photos. Never invent an item that has no source.
+- When merging, keep the worst (highest) severity among the merged items.
+- Normalize each item's location into a project-level description (e.g. "Basement
+  utility room, west wall" instead of "center of photo"), using the photo's label and
+  the item's original location_in_photo as context. Textual only, never coordinates.
+- Do not drop or soften any item — every input item must map to exactly one output item.
+- progress_notes must describe only what is visible; never estimate percent complete
+  or invent schedule/cost figures.
+- Use the record_consolidated_list tool for your answer."""
+
+
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok", "model": MODEL}
@@ -108,12 +266,7 @@ def analyze(
     req: AnalyzeRequest,
     x_anthropic_key: str | None = Header(default=None),
 ) -> dict:
-    api_key = x_anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=401,
-            detail="No API key. Send one in the X-Anthropic-Key header (it is used for this request only).",
-        )
+    api_key = _require_api_key(x_anthropic_key)
 
     if len(req.image_base64) * 3 / 4 > MAX_IMAGE_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail=f"Image larger than {MAX_IMAGE_MB} MB.")
@@ -158,6 +311,33 @@ def analyze(
             return block.input
 
     raise HTTPException(status_code=502, detail="Model did not return a punch list.")
+
+
+@router.post("/aggregate")
+def aggregate(
+    req: AggregateRequest,
+    x_anthropic_key: str | None = Header(default=None),
+) -> dict:
+    api_key = _require_api_key(x_anthropic_key)
+
+    if not req.photos:
+        raise HTTPException(status_code=400, detail="No photos to aggregate.")
+    if len(req.photos) > MAX_AGGREGATE_PHOTOS:
+        raise HTTPException(
+            status_code=413, detail=f"Too many photos to aggregate (max {MAX_AGGREGATE_PHOTOS})."
+        )
+    total_items = sum(len(p.items) for p in req.photos)
+    if total_items > MAX_AGGREGATE_ITEMS:
+        raise HTTPException(
+            status_code=413, detail=f"Too many items to aggregate (max {MAX_AGGREGATE_ITEMS})."
+        )
+
+    payload = json.dumps([p.model_dump() for p in req.photos], indent=2)
+    user_text = (
+        "Consolidate the per-photo punch list items below into a single project-level "
+        "punch list.\n\n" + payload
+    )
+    return _forced_tool_call(api_key, AGGREGATE_SYSTEM_PROMPT, user_text, CONSOLIDATED_LIST_TOOL)
 
 
 def create_app(prefix: str = "") -> FastAPI:
