@@ -127,6 +127,47 @@ export async function askProject(
   return postJson<AskResponse>('/ask', { question, ...context }, apiKey)
 }
 
+export interface RiskReportItemInput {
+  id: string
+  title: string
+  description: string
+  location: string
+  trade: Trade
+  severity: Severity
+}
+
+export interface RiskReportDiffInput {
+  closed_count: number
+  persistent_count: number
+  new_count: number
+}
+
+export interface RiskReportRisk {
+  title: string
+  severity: Severity
+  why: string
+  reference_ids: string[]
+  recommended_action: string
+}
+
+export interface RiskReportResponse {
+  headline: string
+  risks: RiskReportRisk[]
+}
+
+export async function riskReport(
+  items: RiskReportItemInput[],
+  diff: RiskReportDiffInput | undefined,
+  progressNotes: string | undefined,
+  apiKey: string,
+): Promise<RiskReportResponse> {
+  return postJson<RiskReportResponse>(
+    '/risk-report',
+    { items, diff, progress_notes: progressNotes },
+    apiKey,
+  )
+}
+
 async function postJson<T>(path: string, body: unknown, apiKey: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',

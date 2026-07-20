@@ -1306,6 +1306,62 @@ td.num {
   color: #fff;
 }
 
+/* --- v2 Day 6: risk report --- */
+
+.risk-headline {
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 12px 0 16px;
+}
+
+.risk-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.risk-item {
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  counter-increment: risk;
+}
+
+.risk-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.risk-item-head strong {
+  color: #fff;
+  font-size: 13.5px;
+}
+
+.risk-why {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+.risk-action {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+
 footer {
   color: var(--ink-faint);
   font-size: 12.5px;

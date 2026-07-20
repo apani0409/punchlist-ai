@@ -1,6 +1,6 @@
 import { SAMPLES } from './samples'
 import { BASEMENT_HEIGHT, BUILDING_WIDTH, FLOOR_HEIGHT } from '../lib/twinDimensions'
-import type { AskResponse } from '../api'
+import type { AskResponse, RiskReportResponse } from '../api'
 import type {
   DocumentStatus,
   ExtractedDocument,
@@ -587,3 +587,58 @@ export const DEMO_SUGGESTED_QUESTIONS: { question: string; answer: AskResponse }
     },
   },
 ]
+
+// Pre-computed risk report for the demo project's dashboard, grounded in
+// Round 2's nine open items — every reference_ids entry below is a real
+// consolidated-item id from round2.items above.
+export const DEMO_RISK_REPORT: RiskReportResponse = {
+  headline:
+    'Two unresolved root causes — the ceiling leak source and the retaining wall crack — are ' +
+    'now blocking five of the nine open items; resolving those two unblocks the rest of the ' +
+    'project faster than working the list top-down.',
+  risks: [
+    {
+      title: 'Ceiling leak source still unlocated — now blocking two dependent repairs',
+      severity: 'high',
+      why:
+        "The water-damage source hasn't been traced across two inspection rounds, and it's now " +
+        "the stated reason two other items (paint delamination, sheetrock probe) can't proceed. " +
+        'This is the item most likely to cascade into further delay.',
+      reference_ids: ['demo-r2-water-staining', 'demo-r2-paint-delam', 'demo-r2-sheetrock'],
+      recommended_action:
+        'Prioritize a plumbing/roofing trace to locate the leak source before the next ' +
+        'inspection round — this unblocks two downstream items at once.',
+    },
+    {
+      title: 'Retaining wall crack unresolved — structural assessment still pending',
+      severity: 'high',
+      why:
+        'The crack has been open since Round 1 with no visible change. A structural engineer has ' +
+        'not yet been engaged, and the coping repair, organic-growth cleanup, and newly-noted ' +
+        'efflorescence on the same wall are all effectively waiting on this one decision.',
+      reference_ids: ['demo-r2-crack', 'demo-r2-coping', 'demo-r2-organic-growth', 'demo-r2-efflorescence'],
+      recommended_action:
+        'Schedule the structural assessment — three other wall items are blocked on this decision.',
+    },
+    {
+      title: 'Exposed live electrical components in the basement',
+      severity: 'medium',
+      why:
+        'A missing panel cover plate was newly flagged this round, leaving live components ' +
+        'exposed. This is a safety item that should close quickly rather than carry into ' +
+        'another round.',
+      reference_ids: ['demo-r2-cover-plate'],
+      recommended_action:
+        'Install the correct cover plate before the room is signed off — low cost, no reason to wait.',
+    },
+    {
+      title: 'Pipe insulation replacement pending leak confirmation',
+      severity: 'medium',
+      why:
+        'Degraded insulation in the basement utility room is a lower-urgency item tied to the ' +
+        'same undiagnosed ceiling leak.',
+      reference_ids: ['demo-r2-pipe-insulation'],
+      recommended_action: 'Replace once the leak source is confirmed and repaired — no separate action needed before then.',
+    },
+  ],
+}

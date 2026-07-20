@@ -2,16 +2,20 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getProject, listItemsByRound, listRoundsByProject } from '../lib/db'
 import { computeProjectMetrics, type ProjectMetrics } from '../lib/metrics'
+import { DEMO_PROJECT_ID, DEMO_RISK_REPORT } from '../data/demoProject'
 import StatCard from '../components/StatCard'
 import BarChart from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
 import TrendChart from '../components/charts/TrendChart'
-import type { ConsolidatedItem, Project as ProjectType } from '../types'
+import RiskReportPanel from '../components/RiskReportPanel'
+import type { ConsolidatedItem, Project as ProjectType, Round } from '../types'
 
 export default function Dashboard() {
   const { projectId } = useParams<{ projectId: string }>()
   const [project, setProject] = useState<ProjectType | null>(null)
   const [metrics, setMetrics] = useState<ProjectMetrics | null>(null)
+  const [rounds, setRounds] = useState<Round[]>([])
+  const [latestItems, setLatestItems] = useState<ConsolidatedItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,10 +24,13 @@ export default function Dashboard() {
       setLoading(true)
       const p = await getProject(projectId)
       setProject(p ?? null)
-      const rounds = await listRoundsByProject(projectId)
+      const allRounds = await listRoundsByProject(projectId)
       const itemsByRound = new Map<string, ConsolidatedItem[]>()
-      for (const r of rounds) itemsByRound.set(r.id, await listItemsByRound(r.id))
-      setMetrics(computeProjectMetrics(rounds, itemsByRound))
+      for (const r of allRounds) itemsByRound.set(r.id, await listItemsByRound(r.id))
+      setMetrics(computeProjectMetrics(allRounds, itemsByRound))
+      setRounds(allRounds)
+      const latest = allRounds[allRounds.length - 1]
+      setLatestItems(latest ? itemsByRound.get(latest.id) ?? [] : [])
       setLoading(false)
     })()
   }, [projectId])
@@ -77,6 +84,19 @@ export default function Dashboard() {
           />
           <StatCard label="Risk score" value={metrics.riskScore} delta={metrics.riskScoreDelta} invertDelta />
         </div>
+      </section>
+
+      <section className="panel">
+        <h2>Risk report</h2>
+        <p className="summary">
+          A short, prioritized read of what needs attention — grouped and ranked, every risk
+          traceable to real open items. Not a live background monitor; generated on request.
+        </p>
+        <RiskReportPanel
+          items={latestItems}
+          latestRound={rounds[rounds.length - 1] ?? null}
+          cannedReport={projectId === DEMO_PROJECT_ID ? DEMO_RISK_REPORT : undefined}
+        />
       </section>
 
       <div className="dashboard-grid">

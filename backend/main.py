@@ -21,6 +21,11 @@ the project's own data (items, rounds, documents) sent as context —
 grounded, citing what it used, and refusing rather than guessing when the
 answer isn't in that context.
 
+POST /risk-report turns a project's current open items (and, if given,
+how they changed since the last round) into a short, prioritized risk
+report a PM can read in under a minute — grouped, ranked, and referencing
+real item ids rather than restating every item as its own risk.
+
 The Anthropic API key can come from:
   1. the X-Anthropic-Key request header (BYO key — used for that request
      only, never logged or stored), or
@@ -528,6 +533,85 @@ Rules:
 - Use the record_answer tool for your response."""
 
 
+class RiskReportItem(BaseModel):
+    id: str
+    title: str
+    description: str
+    location: str
+    trade: str
+    severity: str
+
+
+class RiskReportDiffSummary(BaseModel):
+    closed_count: int
+    persistent_count: int
+    new_count: int
+
+
+class RiskReportRequest(BaseModel):
+    items: list[RiskReportItem]
+    diff: RiskReportDiffSummary | None = None
+    progress_notes: str | None = None
+
+
+RISK_REPORT_TOOL = {
+    "name": "record_risk_report",
+    "description": "Record a prioritized risk report for a construction project's current open items.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "headline": {
+                "type": "string",
+                "description": "One-sentence executive summary of the project's current risk posture.",
+            },
+            "risks": {
+                "type": "array",
+                "description": (
+                    "Risks ranked most urgent first. Group related items into one risk when they "
+                    "share a root cause — don't just restate every open item as its own risk."
+                ),
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+                        "why": {
+                            "type": "string",
+                            "description": "Why this matters now — e.g. blocks other work, safety, open multiple rounds.",
+                        },
+                        "reference_ids": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Ids of the source items this risk is built from. Never invent an id.",
+                        },
+                        "recommended_action": {"type": "string"},
+                    },
+                    "required": ["title", "severity", "why", "reference_ids", "recommended_action"],
+                },
+            },
+        },
+        "required": ["headline", "risks"],
+    },
+}
+
+RISK_REPORT_SYSTEM_PROMPT = """You are writing a short, prioritized risk report for a construction
+project manager to read in under a minute, based on the project's current open punch-list items
+(and, if provided, how they changed since the last inspection round).
+
+Rules:
+- Rank risks most urgent first: prioritize high severity, items that block other work (mentioned
+  in another item's description or recommended action), safety issues, and items implied to have
+  persisted across multiple rounds by progress_notes or the diff summary.
+- Group related items into one risk when they share a root cause. Aim for a handful of risks,
+  not a wall of them — this must be readable in under a minute.
+- Every risk's reference_ids must be real item ids from the input. Never invent an id or state a
+  fact not supported by the input.
+- recommended_action should be concrete and specific to what's actually blocking progress.
+- headline: one sentence capturing the overall state — what needs attention first, and whether
+  anything is currently blocking other work.
+- Use the record_risk_report tool for your answer."""
+
+
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok", "model": MODEL}
@@ -682,6 +766,30 @@ def ask(
     )
     user_text = f"Project context:\n\n{payload}\n\nQuestion: {question}"
     return _forced_tool_call(api_key, ASK_SYSTEM_PROMPT, user_text, ANSWER_TOOL)
+
+
+@router.post("/risk-report")
+def risk_report(
+    req: RiskReportRequest,
+    x_anthropic_key: str | None = Header(default=None),
+) -> dict:
+    api_key = _require_api_key(x_anthropic_key)
+
+    if not req.items:
+        raise HTTPException(status_code=400, detail="No open items to assess.")
+    if len(req.items) > MAX_AGGREGATE_ITEMS:
+        raise HTTPException(status_code=413, detail=f"Too many items to assess (max {MAX_AGGREGATE_ITEMS}).")
+
+    payload = json.dumps(
+        {
+            "items": [i.model_dump() for i in req.items],
+            "diff": req.diff.model_dump() if req.diff else None,
+            "progress_notes": req.progress_notes,
+        },
+        indent=2,
+    )
+    user_text = f"Write a prioritized risk report for these open items:\n\n{payload}"
+    return _forced_tool_call(api_key, RISK_REPORT_SYSTEM_PROMPT, user_text, RISK_REPORT_TOOL)
 
 
 def create_app(prefix: str = "") -> FastAPI:
