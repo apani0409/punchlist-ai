@@ -11,6 +11,11 @@ POST /diff compares the consolidated items from two inspection rounds and
 classifies each as closed, persistent, or new, so a project's punch list
 can be tracked over time.
 
+POST /extract takes a raw message (an email or text from a subcontractor,
+architect, or field crew) and turns it into one structured document: an
+RFI, a change order, or a notice — never inventing figures the message
+doesn't state.
+
 The Anthropic API key can come from:
   1. the X-Anthropic-Key request header (BYO key — used for that request
      only, never logged or stored), or
@@ -325,6 +330,106 @@ Rules:
 - Use the record_round_diff tool for your answer."""
 
 
+class ExtractRequest(BaseModel):
+    text: str
+    hint: str | None = None  # 'rfi' | 'change_order' | 'notice' | 'auto' | None
+
+
+MAX_EXTRACT_CHARS = 8000
+
+_TRADE_ENUM = [
+    "electrical",
+    "plumbing",
+    "drywall",
+    "paint",
+    "concrete",
+    "carpentry",
+    "safety",
+    "general",
+]
+
+DOCUMENT_TOOL = {
+    "name": "record_document",
+    "description": "Record a structured RFI, change order, or notice extracted from a raw message.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "type": {"type": "string", "enum": ["rfi", "change_order", "notice"]},
+            "priority": {"type": "string", "enum": ["low", "medium", "high"]},
+            "summary": {"type": "string", "description": "One-sentence plain-language summary of the message."},
+            "subject": {"type": "string", "description": "Short subject line."},
+            "rfi_question": {
+                "type": "string",
+                "description": "The question being asked, verbatim intent. Empty string if type is not rfi.",
+            },
+            "rfi_discipline": {"type": "string", "enum": [*_TRADE_ENUM, ""]},
+            "rfi_reference": {
+                "type": "string",
+                "description": "Referenced drawing/spec section, if mentioned. Empty string otherwise.",
+            },
+            "co_description": {
+                "type": "string",
+                "description": "What is changing and why. Empty string if type is not change_order.",
+            },
+            "co_trade": {"type": "string", "enum": [*_TRADE_ENUM, ""]},
+            "co_cost_amount": {
+                "type": ["number", "null"],
+                "description": "Dollar amount ONLY if explicitly stated in the text. Never estimate — null otherwise.",
+            },
+            "co_cost_currency": {"type": "string", "description": "e.g. USD. Empty string if no amount stated."},
+            "co_schedule_impact_days": {
+                "type": ["integer", "null"],
+                "description": "Schedule impact in days ONLY if explicitly stated. Never estimate — null otherwise.",
+            },
+            "co_initiated_by": {"type": "string", "description": "Who requested it, if named. Empty string otherwise."},
+            "notice_type": {"type": "string", "enum": ["delay", "change", "defect", "other", ""]},
+            "notice_body_draft": {
+                "type": "string",
+                "description": "Drafted notice body ready for human review/edit. Empty string if type is not notice.",
+            },
+        },
+        "required": [
+            "type",
+            "priority",
+            "summary",
+            "subject",
+            "rfi_question",
+            "rfi_discipline",
+            "rfi_reference",
+            "co_description",
+            "co_trade",
+            "co_cost_amount",
+            "co_cost_currency",
+            "co_schedule_impact_days",
+            "co_initiated_by",
+            "notice_type",
+            "notice_body_draft",
+        ],
+    },
+}
+
+EXTRACT_SYSTEM_PROMPT = """You are a construction-project assistant that turns a raw message (an
+email or text from a subcontractor, architect, or field crew) into one structured document: an
+RFI (request for information), a change order, or a notice (e.g. of delay or defect).
+
+Rules:
+- Classify the message as exactly one of: rfi, change_order, notice. Use the hint if one is
+  given and plausible, otherwise infer from content.
+- Only fill in the fields for the detected type; leave every field belonging to the other types
+  as an empty string (or null for the two numeric change-order fields).
+- NEVER invent a dollar amount, a schedule-impact day count, or any other figure that is not
+  explicitly stated in the text. If a change order mentions cost or schedule impact without a
+  specific number, leave co_cost_amount / co_schedule_impact_days as null — do not estimate.
+- For an RFI: extract the question being asked. Do NOT answer it — resolving RFIs requires
+  reviewing the actual drawings/specs, which is a human's job, not this tool's.
+- For a change order: extract what's changing, why, the responsible trade, and any stated cost
+  or schedule impact.
+- For a notice: draft a short, professional notice body ready for human review and editing
+  before it's sent — do not state anything as fact beyond what the message itself says.
+- priority: high = safety/blocking/urgent; medium = needs attention this week; low = routine.
+- Use the record_document tool for your answer."""
+
+
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok", "model": MODEL}
@@ -433,6 +538,24 @@ def diff(
     )
     user_text = "Compare these two inspection rounds and classify every item.\n\n" + payload
     return _forced_tool_call(api_key, DIFF_SYSTEM_PROMPT, user_text, ROUND_DIFF_TOOL)
+
+
+@router.post("/extract")
+def extract(
+    req: ExtractRequest,
+    x_anthropic_key: str | None = Header(default=None),
+) -> dict:
+    api_key = _require_api_key(x_anthropic_key)
+
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="No text to extract from.")
+    if len(text) > MAX_EXTRACT_CHARS:
+        raise HTTPException(status_code=413, detail=f"Text too long (max {MAX_EXTRACT_CHARS} characters).")
+
+    hint_line = f"\n\nHint: this is likely a {req.hint}." if req.hint and req.hint != "auto" else ""
+    user_text = f"Extract a structured document from this message:{hint_line}\n\n{text}"
+    return _forced_tool_call(api_key, EXTRACT_SYSTEM_PROMPT, user_text, DOCUMENT_TOOL)
 
 
 def create_app(prefix: str = "") -> FastAPI:

@@ -1,11 +1,11 @@
 import { DEMO_DATA, DEMO_PROJECT_ID } from '../data/demoProject'
 import { processPhoto } from './images'
-import { getDB, putPhoto, putProject, putRound, replaceItemsForRound } from './db'
-import type { ConsolidatedItem, Photo, Project, Round } from '../types'
+import { getDB, putDocument, putPhoto, putProject, putRound, replaceItemsForRound } from './db'
+import type { ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '../types'
 
 // Bump when DEMO_DATA changes shape/content so returning users get the
 // refreshed seed instead of a stale one from an earlier version.
-const DEMO_VERSION = 3
+const DEMO_VERSION = 4
 
 export async function ensureDemoProject(): Promise<void> {
   const db = await getDB()
@@ -65,18 +65,32 @@ export async function ensureDemoProject(): Promise<void> {
     }))
     await replaceItemsForRound(round.id, items)
   }
+
+  for (const d of DEMO_DATA.documents) {
+    const document: ProjectDocument = {
+      id: d.id,
+      projectId: DEMO_PROJECT_ID,
+      status: d.status,
+      createdAt: now,
+      sourceText: d.sourceText,
+      extracted: d.extracted,
+    }
+    await putDocument(document)
+  }
 }
 
 async function clearProjectData(projectId: string): Promise<void> {
   const db = await getDB()
-  const tx = db.transaction(['rounds', 'photos', 'items'], 'readwrite')
+  const tx = db.transaction(['rounds', 'photos', 'items', 'documents'], 'readwrite')
   const rounds = await tx.objectStore('rounds').index('by-project').getAll(projectId)
   const photos = await tx.objectStore('photos').index('by-project').getAll(projectId)
   const items = await tx.objectStore('items').index('by-project').getAll(projectId)
+  const documents = await tx.objectStore('documents').index('by-project').getAll(projectId)
   await Promise.all([
     ...rounds.map((r) => tx.objectStore('rounds').delete(r.id)),
     ...photos.map((p) => tx.objectStore('photos').delete(p.id)),
     ...items.map((i) => tx.objectStore('items').delete(i.id)),
+    ...documents.map((d) => tx.objectStore('documents').delete(d.id)),
   ])
   await tx.done
 }

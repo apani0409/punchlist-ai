@@ -1,5 +1,5 @@
 import { blobToBase64 } from './lib/images'
-import type { PunchListResult, Severity, Trade } from './types'
+import type { ExtractedDocument, PunchListResult, Severity, Trade } from './types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -72,6 +72,14 @@ export async function diffRounds(
     { previous_items: previousItems, current_items: currentItems },
     apiKey,
   )
+}
+
+export async function extractDocument(
+  text: string,
+  apiKey: string,
+  hint?: 'rfi' | 'change_order' | 'notice',
+): Promise<ExtractedDocument> {
+  return postJson<ExtractedDocument>('/extract', { text, hint }, apiKey)
 }
 
 async function postJson<T>(path: string, body: unknown, apiKey: string): Promise<T> {

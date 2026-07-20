@@ -100,3 +100,39 @@ export interface ConsolidatedItem {
   recommended_action: string
   sourcePhotoIds: string[]
 }
+
+// --- v2 Day 4: document intelligence (RFI / change order / notice) ---
+
+export type DocumentType = 'rfi' | 'change_order' | 'notice'
+export type DocumentPriority = 'low' | 'medium' | 'high'
+export type DocumentStatus = 'draft' | 'reviewed'
+export type NoticeType = 'delay' | 'change' | 'defect' | 'other' | ''
+
+// Mirrors backend/main.py's DOCUMENT_TOOL exactly: one flat shape, fields
+// belonging to the other two types left as '' / null rather than omitted.
+export interface ExtractedDocument {
+  type: DocumentType
+  priority: DocumentPriority
+  summary: string
+  subject: string
+  rfi_question: string
+  rfi_discipline: Trade | ''
+  rfi_reference: string
+  co_description: string
+  co_trade: Trade | ''
+  co_cost_amount: number | null
+  co_cost_currency: string
+  co_schedule_impact_days: number | null
+  co_initiated_by: string
+  notice_type: NoticeType
+  notice_body_draft: string
+}
+
+export interface ProjectDocument {
+  id: string
+  projectId: string
+  status: DocumentStatus
+  createdAt: number
+  sourceText: string
+  extracted: ExtractedDocument
+}

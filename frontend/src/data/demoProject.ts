@@ -1,6 +1,14 @@
 import { SAMPLES } from './samples'
 import { BASEMENT_HEIGHT, BUILDING_WIDTH, FLOOR_HEIGHT } from '../lib/twinDimensions'
-import type { PunchListResult, RoundDiff, Severity, Trade, TwinPosition } from '../types'
+import type {
+  DocumentStatus,
+  ExtractedDocument,
+  PunchListResult,
+  RoundDiff,
+  Severity,
+  Trade,
+  TwinPosition,
+} from '../types'
 
 export const DEMO_PROJECT_ID = 'demo'
 
@@ -410,7 +418,110 @@ const round2: DemoRound = {
   },
 }
 
+export interface DemoDocument {
+  id: string
+  status: DocumentStatus
+  sourceText: string
+  extracted: ExtractedDocument
+}
+
+function blankExtracted(overrides: Partial<ExtractedDocument>): ExtractedDocument {
+  return {
+    type: 'notice',
+    priority: 'low',
+    summary: '',
+    subject: '',
+    rfi_question: '',
+    rfi_discipline: '',
+    rfi_reference: '',
+    co_description: '',
+    co_trade: '',
+    co_cost_amount: null,
+    co_cost_currency: '',
+    co_schedule_impact_days: null,
+    co_initiated_by: '',
+    notice_type: '',
+    notice_body_draft: '',
+    ...overrides,
+  }
+}
+
+// Three pre-extracted example messages so Document Intelligence is
+// explorable with zero API key. The change-order text mirrors the exact
+// "$3,000 to change the foundation wall from 12\" to 16\"" example from a
+// GC/CM discussion of what they wished construction software could do.
+const DEMO_DOCUMENTS: DemoDocument[] = [
+  {
+    id: 'demo-doc-rfi',
+    status: 'reviewed',
+    sourceText:
+      'Hi team, quick question on the mechanical room layout — Sheet M-201 shows the exhaust ' +
+      'duct routed along the north wall, but the structural drawing S-104 shows a beam right ' +
+      "where that duct is supposed to run. Can you confirm which takes precedence, or if the " +
+      'duct needs to be rerouted? Need to know before we frame that wall. Thanks, Dave',
+    extracted: blankExtracted({
+      type: 'rfi',
+      priority: 'high',
+      summary:
+        'Conflict between the mechanical duct routing on M-201 and a structural beam on S-104 ' +
+        'in the mechanical room north wall.',
+      subject: 'Duct routing conflict with structural beam — mechanical room north wall',
+      rfi_question:
+        'Does the structural beam shown on S-104 take precedence over the exhaust duct routing ' +
+        'shown on M-201, or does the duct need to be rerouted?',
+      rfi_discipline: 'general',
+      rfi_reference: 'M-201 (mechanical), S-104 (structural)',
+    }),
+  },
+  {
+    id: 'demo-doc-co',
+    status: 'reviewed',
+    sourceText:
+      'Hey, so changing that foundation wall from 12 inches to 16 inches like you asked is ' +
+      'going to run an extra $3,000 for the additional concrete and rebar. Let me know if you ' +
+      'want me to proceed — Mike',
+    extracted: blankExtracted({
+      type: 'change_order',
+      priority: 'medium',
+      summary:
+        'Subcontractor requests a $3,000 change order to widen a foundation wall from 12" to 16".',
+      subject: 'Foundation wall thickness change — 12" to 16"',
+      co_description:
+        'Foundation wall thickness increased from 12 inches to 16 inches per request, requiring ' +
+        'additional concrete and rebar.',
+      co_trade: 'concrete',
+      co_cost_amount: 3000,
+      co_cost_currency: 'USD',
+      co_schedule_impact_days: null, // not stated in the message — left null, not guessed
+      co_initiated_by: 'Mike (subcontractor)',
+    }),
+  },
+  {
+    id: 'demo-doc-notice',
+    status: 'draft',
+    sourceText:
+      'Just a heads up — the rebar delivery got pushed back to next Thursday because of a ' +
+      "supplier issue, so we're going to lose about 3 days on the foundation pour. Wanted to " +
+      'flag this before it becomes a bigger problem.',
+    extracted: blankExtracted({
+      type: 'notice',
+      priority: 'high',
+      summary:
+        'Rebar delivery delayed to next Thursday due to a supplier issue, pushing the ' +
+        'foundation pour back approximately 3 days.',
+      subject: 'Delay notice — rebar delivery pushed back, foundation pour affected',
+      notice_type: 'delay',
+      notice_body_draft:
+        'Please be advised that the rebar delivery for the foundation pour has been delayed to ' +
+        'next Thursday due to a supplier issue. This is expected to push the foundation pour ' +
+        'back approximately 3 days. Flagging now to allow for schedule adjustments; will ' +
+        'confirm the revised pour date once delivery is reconfirmed.',
+    }),
+  },
+]
+
 export const DEMO_DATA = {
   projectName: 'Riverside Build — Demo Project',
   rounds: [round1, round2],
+  documents: DEMO_DOCUMENTS,
 }

@@ -160,6 +160,9 @@ export default function Project() {
             <p className="summary">{round.name}</p>
           </div>
           <div className="project-nav-links">
+            <Link to={`/project/${project.id}/inbox`} className="pdf-btn">
+              Inbox →
+            </Link>
             <Link to={`/project/${project.id}/twin`} className="pdf-btn">
               Digital twin →
             </Link>

@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { ConsolidatedItem, Photo, Project, Round } from '../types'
+import type { ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '../types'
 
 interface PunchListDB extends DBSchema {
   projects: {
@@ -21,26 +21,37 @@ interface PunchListDB extends DBSchema {
     value: ConsolidatedItem
     indexes: { 'by-round': string; 'by-project': string }
   }
+  documents: {
+    key: string
+    value: ProjectDocument
+    indexes: { 'by-project': string }
+  }
 }
 
 let dbPromise: Promise<IDBPDatabase<PunchListDB>> | null = null
 
 export function getDB(): Promise<IDBPDatabase<PunchListDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<PunchListDB>('punchlist-ai', 1, {
-      upgrade(db) {
-        db.createObjectStore('projects', { keyPath: 'id' })
+    dbPromise = openDB<PunchListDB>('punchlist-ai', 2, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          db.createObjectStore('projects', { keyPath: 'id' })
 
-        const rounds = db.createObjectStore('rounds', { keyPath: 'id' })
-        rounds.createIndex('by-project', 'projectId')
+          const rounds = db.createObjectStore('rounds', { keyPath: 'id' })
+          rounds.createIndex('by-project', 'projectId')
 
-        const photos = db.createObjectStore('photos', { keyPath: 'id' })
-        photos.createIndex('by-round', 'roundId')
-        photos.createIndex('by-project', 'projectId')
+          const photos = db.createObjectStore('photos', { keyPath: 'id' })
+          photos.createIndex('by-round', 'roundId')
+          photos.createIndex('by-project', 'projectId')
 
-        const items = db.createObjectStore('items', { keyPath: 'id' })
-        items.createIndex('by-round', 'roundId')
-        items.createIndex('by-project', 'projectId')
+          const items = db.createObjectStore('items', { keyPath: 'id' })
+          items.createIndex('by-round', 'roundId')
+          items.createIndex('by-project', 'projectId')
+        }
+        if (oldVersion < 2) {
+          const documents = db.createObjectStore('documents', { keyPath: 'id' })
+          documents.createIndex('by-project', 'projectId')
+        }
       },
     })
   }
@@ -67,15 +78,17 @@ export async function listProjects(): Promise<Project[]> {
 
 export async function deleteProject(id: string): Promise<void> {
   const db = await getDB()
-  const tx = db.transaction(['projects', 'rounds', 'photos', 'items'], 'readwrite')
+  const tx = db.transaction(['projects', 'rounds', 'photos', 'items', 'documents'], 'readwrite')
   await tx.objectStore('projects').delete(id)
   const rounds = await tx.objectStore('rounds').index('by-project').getAll(id)
   const photos = await tx.objectStore('photos').index('by-project').getAll(id)
   const items = await tx.objectStore('items').index('by-project').getAll(id)
+  const documents = await tx.objectStore('documents').index('by-project').getAll(id)
   await Promise.all([
     ...rounds.map((r) => tx.objectStore('rounds').delete(r.id)),
     ...photos.map((p) => tx.objectStore('photos').delete(p.id)),
     ...items.map((i) => tx.objectStore('items').delete(i.id)),
+    ...documents.map((d) => tx.objectStore('documents').delete(d.id)),
   ])
   await tx.done
 }
@@ -151,4 +164,17 @@ export async function listItemsByRound(roundId: string): Promise<ConsolidatedIte
 export async function listItemsByProject(projectId: string): Promise<ConsolidatedItem[]> {
   const db = await getDB()
   return db.getAllFromIndex('items', 'by-project', projectId)
+}
+
+// --- documents (RFI / change order / notice) ---
+
+export async function putDocument(document: ProjectDocument): Promise<void> {
+  const db = await getDB()
+  await db.put('documents', document)
+}
+
+export async function listDocumentsByProject(projectId: string): Promise<ProjectDocument[]> {
+  const db = await getDB()
+  const all = await db.getAllFromIndex('documents', 'by-project', projectId)
+  return all.sort((a, b) => b.createdAt - a.createdAt)
 }
