@@ -6,50 +6,61 @@ import {
   BUILDING_WIDTH,
   FLOOR_COUNT,
   FLOOR_HEIGHT,
+  FOOTPRINT_CENTER_X,
+  FOOTPRINT_SPAN_X,
+  FOOTPRINT_SPAN_Z,
   GRID_SPACING,
+  WING_CENTER_X,
+  WING_CENTER_Z,
+  WING_DEPTH,
+  WING_FLOORS,
+  WING_WIDTH,
 } from '../../lib/twinDimensions'
 
 const COLUMN_RADIUS = 0.15
 const TOTAL_HEIGHT = BASEMENT_HEIGHT + BUILDING_HEIGHT
 
-function columnPositions(): [number, number][] {
+function columnPositions(centerX: number, centerZ: number, width: number, depth: number): [number, number][] {
   const positions: [number, number][] = []
-  const halfW = BUILDING_WIDTH / 2
-  const halfD = BUILDING_DEPTH / 2
-  for (let x = -halfW; x <= halfW + 0.01; x += GRID_SPACING) {
-    for (let z = -halfD; z <= halfD + 0.01; z += GRID_SPACING) {
+  const halfW = width / 2
+  const halfD = depth / 2
+  for (let x = centerX - halfW; x <= centerX + halfW + 0.01; x += GRID_SPACING) {
+    for (let z = centerZ - halfD; z <= centerZ + halfD + 0.01; z += GRID_SPACING) {
       positions.push([x, z])
     }
   }
   return positions
 }
 
-const COLUMNS = columnPositions()
+const MAIN_COLUMNS = columnPositions(0, 0, BUILDING_WIDTH, BUILDING_DEPTH)
+const WING_COLUMNS = columnPositions(WING_CENTER_X, WING_CENTER_Z, WING_WIDTH, WING_DEPTH)
+const WING_HEIGHT = FLOOR_HEIGHT * WING_FLOORS
 
 // A schematic, procedurally-generated building massing model — not a
 // survey-accurate BIM. Avoids licensing/attribution concerns of a
 // downloaded GLTF and loads instantly. Floor shells are translucent so
-// markers inside remain visible from any angle.
+// markers inside remain visible from any angle. An L-shaped footprint
+// (main block + a lower wing) reads as more building-like than a single box.
 export default function Building() {
   return (
     <group>
       <Grid
-        position={[0, -BASEMENT_HEIGHT - 0.01, 0]}
-        args={[BUILDING_WIDTH * 2.5, BUILDING_DEPTH * 2.5]}
+        position={[FOOTPRINT_CENTER_X, -BASEMENT_HEIGHT - 0.01, 0]}
+        args={[FOOTPRINT_SPAN_X * 2, FOOTPRINT_SPAN_Z * 2.5]}
         cellColor="#24304a"
         sectionColor="#3a4a6b"
-        fadeDistance={45}
+        fadeDistance={50}
         infiniteGrid
       />
 
-      {/* Basement volume */}
+      {/* Basement volume, under the main block only */}
       <mesh position={[0, -BASEMENT_HEIGHT / 2, 0]}>
         <boxGeometry args={[BUILDING_WIDTH, BASEMENT_HEIGHT, BUILDING_DEPTH]} />
         <meshStandardMaterial color="#182238" transparent opacity={0.35} />
         <Edges color="#3a4a6b" />
       </mesh>
 
-      {/* Above-grade shell, one translucent volume per floor */}
+      {/* Main block: translucent shell + slab per floor */}
       {Array.from({ length: FLOOR_COUNT }).map((_, i) => (
         <mesh key={i} position={[0, i * FLOOR_HEIGHT + FLOOR_HEIGHT / 2, 0]}>
           <boxGeometry args={[BUILDING_WIDTH, FLOOR_HEIGHT, BUILDING_DEPTH]} />
@@ -57,19 +68,36 @@ export default function Building() {
           <Edges color="#f97316" />
         </mesh>
       ))}
-
-      {/* Floor slabs */}
       {Array.from({ length: FLOOR_COUNT + 1 }).map((_, i) => (
         <mesh key={i} position={[0, i * FLOOR_HEIGHT, 0]}>
           <boxGeometry args={[BUILDING_WIDTH, 0.15, BUILDING_DEPTH]} />
           <meshStandardMaterial color="#64748b" />
         </mesh>
       ))}
-
-      {/* Structural column grid, basement through roof */}
-      {COLUMNS.map(([x, z], i) => (
+      {MAIN_COLUMNS.map(([x, z], i) => (
         <mesh key={i} position={[x, TOTAL_HEIGHT / 2 - BASEMENT_HEIGHT, z]}>
           <cylinderGeometry args={[COLUMN_RADIUS, COLUMN_RADIUS, TOTAL_HEIGHT, 8]} />
+          <meshStandardMaterial color="#94a3b8" />
+        </mesh>
+      ))}
+
+      {/* Wing: same treatment, shorter, no basement below it */}
+      {Array.from({ length: WING_FLOORS }).map((_, i) => (
+        <mesh key={i} position={[WING_CENTER_X, i * FLOOR_HEIGHT + FLOOR_HEIGHT / 2, WING_CENTER_Z]}>
+          <boxGeometry args={[WING_WIDTH, FLOOR_HEIGHT, WING_DEPTH]} />
+          <meshStandardMaterial color="#f97316" transparent opacity={0.05} depthWrite={false} />
+          <Edges color="#f97316" />
+        </mesh>
+      ))}
+      {Array.from({ length: WING_FLOORS + 1 }).map((_, i) => (
+        <mesh key={i} position={[WING_CENTER_X, i * FLOOR_HEIGHT, WING_CENTER_Z]}>
+          <boxGeometry args={[WING_WIDTH, 0.15, WING_DEPTH]} />
+          <meshStandardMaterial color="#64748b" />
+        </mesh>
+      ))}
+      {WING_COLUMNS.map(([x, z], i) => (
+        <mesh key={`wing-${i}`} position={[x, WING_HEIGHT / 2, z]}>
+          <cylinderGeometry args={[COLUMN_RADIUS, COLUMN_RADIUS, WING_HEIGHT, 8]} />
           <meshStandardMaterial color="#94a3b8" />
         </mesh>
       ))}

@@ -3,10 +3,15 @@ import { OrbitControls } from '@react-three/drei'
 import Building from './Building'
 import Markers from './Markers'
 import PlacementController from './PlacementController'
-import { BASEMENT_HEIGHT, BUILDING_DEPTH, BUILDING_HEIGHT, BUILDING_WIDTH } from '../../lib/twinDimensions'
+import {
+  BASEMENT_HEIGHT,
+  BUILDING_HEIGHT,
+  FOOTPRINT_SPAN_X,
+  FOOTPRINT_SPAN_Z,
+} from '../../lib/twinDimensions'
 import type { ConsolidatedItem, Photo, TwinPosition } from '../../types'
 
-const CAM_DISTANCE = Math.max(BUILDING_WIDTH, BUILDING_DEPTH) * 1.5
+const CAM_DISTANCE = Math.max(FOOTPRINT_SPAN_X, FOOTPRINT_SPAN_Z) * 1.4
 const TARGET_Y = (BUILDING_HEIGHT - BASEMENT_HEIGHT) / 2
 
 export default function TwinCanvas({
