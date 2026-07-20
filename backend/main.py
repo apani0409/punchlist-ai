@@ -16,6 +16,11 @@ architect, or field crew) and turns it into one structured document: an
 RFI, a change order, or a notice — never inventing figures the message
 doesn't state.
 
+POST /ask answers a natural-language question about a project using only
+the project's own data (items, rounds, documents) sent as context —
+grounded, citing what it used, and refusing rather than guessing when the
+answer isn't in that context.
+
 The Anthropic API key can come from:
   1. the X-Anthropic-Key request header (BYO key — used for that request
      only, never logged or stored), or
@@ -430,6 +435,99 @@ Rules:
 - Use the record_document tool for your answer."""
 
 
+class AskContextItem(BaseModel):
+    id: str
+    title: str
+    description: str
+    location: str
+    trade: str
+    severity: str
+    round_index: int
+
+
+class AskContextRound(BaseModel):
+    id: str
+    index: int
+    name: str
+    project_summary: str = ""
+    progress_notes: str = ""
+
+
+class AskContextDocument(BaseModel):
+    id: str
+    type: str
+    subject: str
+    summary: str
+
+
+class AskRequest(BaseModel):
+    question: str
+    items: list[AskContextItem] = []
+    rounds: list[AskContextRound] = []
+    documents: list[AskContextDocument] = []
+
+
+MAX_ASK_CONTEXT_RECORDS = 400
+
+ANSWER_TOOL = {
+    "name": "record_answer",
+    "description": "Record a grounded answer to a question about this construction project.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "answer": {
+                "type": "string",
+                "description": (
+                    "The answer, in plain language, a few sentences. If not answerable from the "
+                    "provided context, explain what information would be needed instead."
+                ),
+            },
+            "grounded": {
+                "type": "boolean",
+                "description": "True only if the answer is fully supported by the provided context.",
+            },
+            "citations": {
+                "type": "array",
+                "description": "Every item/round/document referenced in the answer. Empty if grounded is false.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "kind": {"type": "string", "enum": ["item", "round", "document"]},
+                        "id": {"type": "string"},
+                        "label": {"type": "string", "description": "Short human-readable label for this citation."},
+                    },
+                    "required": ["kind", "id", "label"],
+                },
+            },
+        },
+        "required": ["answer", "grounded", "citations"],
+    },
+}
+
+ASK_SYSTEM_PROMPT = """You are answering questions about a construction project using ONLY the
+structured data provided below (punch list items, inspection rounds, and extracted documents).
+This is the project's actual current data — you have no other knowledge of this project.
+
+Context notes:
+- Each item has a round_index: the round in which that finding was observed. If an item appears
+  in an earlier round but not in a later one, treat it as likely resolved by that later round —
+  check that round's progress_notes for confirmation before stating this as fact.
+- Rounds are listed in order with their project_summary and progress_notes, which describe what
+  changed between rounds.
+
+Rules:
+- Answer ONLY from the provided context. Never use outside knowledge about construction in
+  general, this project, or anything not explicitly given to you here.
+- If the answer isn't in the provided context (e.g. asking about budget, schedule, or anything
+  not tracked), set grounded to false and say plainly what information would be needed. Do not
+  guess, estimate, or speculate to fill the gap.
+- Every fact in your answer must trace to a specific item, round, or document in the context —
+  list each one you used in citations, with a short human-readable label. If grounded is false,
+  citations must be empty.
+- Keep the answer to a few sentences.
+- Use the record_answer tool for your response."""
+
+
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok", "model": MODEL}
@@ -556,6 +654,34 @@ def extract(
     hint_line = f"\n\nHint: this is likely a {req.hint}." if req.hint and req.hint != "auto" else ""
     user_text = f"Extract a structured document from this message:{hint_line}\n\n{text}"
     return _forced_tool_call(api_key, EXTRACT_SYSTEM_PROMPT, user_text, DOCUMENT_TOOL)
+
+
+@router.post("/ask")
+def ask(
+    req: AskRequest,
+    x_anthropic_key: str | None = Header(default=None),
+) -> dict:
+    api_key = _require_api_key(x_anthropic_key)
+
+    question = req.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="No question asked.")
+    total_context = len(req.items) + len(req.rounds) + len(req.documents)
+    if total_context > MAX_ASK_CONTEXT_RECORDS:
+        raise HTTPException(
+            status_code=413, detail=f"Too much project context (max {MAX_ASK_CONTEXT_RECORDS} records)."
+        )
+
+    payload = json.dumps(
+        {
+            "items": [i.model_dump() for i in req.items],
+            "rounds": [r.model_dump() for r in req.rounds],
+            "documents": [d.model_dump() for d in req.documents],
+        },
+        indent=2,
+    )
+    user_text = f"Project context:\n\n{payload}\n\nQuestion: {question}"
+    return _forced_tool_call(api_key, ASK_SYSTEM_PROMPT, user_text, ANSWER_TOOL)
 
 
 def create_app(prefix: str = "") -> FastAPI:

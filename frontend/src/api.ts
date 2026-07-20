@@ -82,6 +82,51 @@ export async function extractDocument(
   return postJson<ExtractedDocument>('/extract', { text, hint }, apiKey)
 }
 
+export interface AskContextItem {
+  id: string
+  title: string
+  description: string
+  location: string
+  trade: Trade
+  severity: Severity
+  round_index: number
+}
+
+export interface AskContextRound {
+  id: string
+  index: number
+  name: string
+  project_summary: string
+  progress_notes: string
+}
+
+export interface AskContextDocument {
+  id: string
+  type: string
+  subject: string
+  summary: string
+}
+
+export interface AskCitation {
+  kind: 'item' | 'round' | 'document'
+  id: string
+  label: string
+}
+
+export interface AskResponse {
+  answer: string
+  grounded: boolean
+  citations: AskCitation[]
+}
+
+export async function askProject(
+  question: string,
+  context: { items: AskContextItem[]; rounds: AskContextRound[]; documents: AskContextDocument[] },
+  apiKey: string,
+): Promise<AskResponse> {
+  return postJson<AskResponse>('/ask', { question, ...context }, apiKey)
+}
+
 async function postJson<T>(path: string, body: unknown, apiKey: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',

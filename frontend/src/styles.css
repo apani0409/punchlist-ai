@@ -1203,6 +1203,109 @@ td.num {
   border-top: 1px solid var(--line);
 }
 
+/* --- v2 Day 5: ask (grounded Q&A) --- */
+
+.ask-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ask-suggestion-btn {
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12.5px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ask-suggestion-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ask-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ask-exchange {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ask-question {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 8px 14px;
+  border-radius: 12px 12px 2px 12px;
+  max-width: 80%;
+  margin: 0;
+}
+
+.ask-answer {
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 2px 12px 12px 12px;
+  padding: 12px 14px;
+  max-width: 80%;
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.ask-answer p {
+  margin: 0;
+}
+
+.ask-answer-ungrounded {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.ask-refused-badge {
+  display: inline-block;
+  background: var(--medium-bg);
+  color: var(--medium);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.ask-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ask-citation-chip {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.ask-citation-chip:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 footer {
   color: var(--ink-faint);
   font-size: 12.5px;

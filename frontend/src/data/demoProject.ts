@@ -1,5 +1,6 @@
 import { SAMPLES } from './samples'
 import { BASEMENT_HEIGHT, BUILDING_WIDTH, FLOOR_HEIGHT } from '../lib/twinDimensions'
+import type { AskResponse } from '../api'
 import type {
   DocumentStatus,
   ExtractedDocument,
@@ -525,3 +526,64 @@ export const DEMO_DATA = {
   rounds: [round1, round2],
   documents: DEMO_DOCUMENTS,
 }
+
+// Pre-computed answers for the Ask page's suggested questions, so the demo
+// project's Q&A is explorable with zero API key and reads identically every
+// time. Three are grounded in real seeded data; the fourth deliberately
+// demonstrates the honest refusal — asking about something (budget) this
+// project genuinely doesn't track, rather than guessing a number.
+export const DEMO_SUGGESTED_QUESTIONS: { question: string; answer: AskResponse }[] = [
+  {
+    question: 'What high-severity issues are still open?',
+    answer: {
+      answer:
+        'Two high-severity items are still open as of Round 2: the vertical crack through the ' +
+        'retaining wall, which is still awaiting a structural assessment, and the water staining ' +
+        'on the ceiling, whose leak source has still not been located and is now blocking two ' +
+        'dependent repairs (paint and sheetrock).',
+      grounded: true,
+      citations: [
+        { kind: 'item', id: 'demo-r2-crack', label: 'Vertical crack through retaining wall' },
+        { kind: 'item', id: 'demo-r2-water-staining', label: 'Water staining indicates leak above' },
+      ],
+    },
+  },
+  {
+    question: 'What is the total change-order cost impact so far?',
+    answer: {
+      answer:
+        'One change order is on record: widening the foundation wall from 12" to 16" for ' +
+        'additional concrete and rebar, at a stated cost of $3,000. No change orders are ' +
+        'currently pending a cost figure.',
+      grounded: true,
+      citations: [
+        { kind: 'document', id: 'demo-doc-co', label: 'Foundation wall thickness change — 12" to 16"' },
+      ],
+    },
+  },
+  {
+    question: 'Has the basement wiring issue been resolved?',
+    answer: {
+      answer:
+        'Partially. The originally unsecured cable was closed in Round 2 — it was secured on ' +
+        'site. But a new issue was flagged in that same re-inspection: one of the electrical ' +
+        "panels is missing its cover plate, so the basement electrical work isn't fully clear yet.",
+      grounded: true,
+      citations: [
+        { kind: 'item', id: 'demo-r1-demo-basement-wiring-1', label: 'Unsecured cable hanging to floor (closed)' },
+        { kind: 'item', id: 'demo-r2-cover-plate', label: 'Missing panel cover plate' },
+      ],
+    },
+  },
+  {
+    question: 'What is the project budget?',
+    answer: {
+      answer:
+        "This project's data doesn't include an overall budget or cost tracking — only the " +
+        'dollar amount stated on the one recorded change order ($3,000) is tracked. Answering a ' +
+        'total-budget question would require a budget record this project doesn\'t have.',
+      grounded: false,
+      citations: [],
+    },
+  },
+]
