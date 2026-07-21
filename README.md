@@ -131,6 +131,21 @@ composite 0.063) while an "always edit the best-known prompt" strategy holds ont
 it (post-peak average 0.281, 4.5× higher). See [`bench/README.md`](bench/README.md)
 for the full comparison and both reports.
 
+## Guardrail evals: proving the honesty guarantees, not just stating them
+
+Every endpoint here claims something specific — `/extract` never invents a
+cost figure, `/ask` and `/code-search` refuse rather than guess, `/aggregate`/
+`/diff`/`/risk-report` never reference an id absent from their own input.
+[`evals/`](evals/) turns each of those claims into an adversarial request
+against the real, running backend with a deterministic, code-checked
+assertion (no LLM judge — same philosophy as `bench/scorer.py`): 11 cases
+across all 6 text-model endpoints, including verifying a `/code-search`
+citation's quote is a literal substring of the corpus text sent, not a
+paraphrase. Unlike `bench/`, this calls the real Claude-backed endpoints, so
+it needs a real API key and costs a small amount to run (11 short, mostly
+text-only calls — a fraction of a cent) — see [`evals/README.md`](evals/README.md)
+for what's checked and how to run it.
+
 ## Sample photos
 
 The gallery photos are CC0 / public-domain images from Wikimedia Commons ([cracked retaining wall](https://commons.wikimedia.org/wiki/File:Cracked_concrete_retaining_wall_at_Medway_Park_Sports_Centre,_Gillingham,_Kent,_England.jpg), [basement utility room](https://commons.wikimedia.org/wiki/File:EFTA00000341_-_Empty_basement_room_with_exposed_electrical_wiring_panels_and_pipes_on_the_wall_leading_to_a_doorway_into_another_space.jpg), [water-damaged ceiling](https://commons.wikimedia.org/wiki/File:Ceiling_sheetrock_damaged_by_water_so_paint_was_peeling.jpg), [crack close-up](https://commons.wikimedia.org/wiki/File:Detail_of_vertical_crack_in_concrete_retaining_wall_at_Medway_Park_Sports_Centre,_Gillingham,_Kent,_England.jpg), [leaky sink valve](https://commons.wikimedia.org/wiki/File:Kitchen_renovation_leaky_valve_beneath_kitchen_sink.JPG)). Their cached results were produced with the same prompt/schema during development and reviewed by hand. The crack close-up shares a physical defect with the wide retaining-wall shot, so the demo merges them into one consolidated item with two source photos — a visible example of what `/aggregate` does with duplicate photos of the same finding. The v2 demo project's "Round 2" re-inspects the same areas rather than sourcing new photos every round — labeled explicitly as a re-inspection pass, with closures noted as verified on site rather than claiming the photos themselves changed. The Inbox's change-order example ("$3,000 to widen a foundation wall from 12\" to 16\"") mirrors the GC/CM discussion referenced above.
