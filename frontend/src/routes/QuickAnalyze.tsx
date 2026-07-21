@@ -3,6 +3,7 @@ import { SAMPLES } from '../data/samples'
 import { analyzePhoto } from '../api'
 import { exportPdf } from '../pdf'
 import ApiKeyField, { useApiKey } from '../components/ApiKeyField'
+import SeverityBadge from '../components/SeverityBadge'
 import type { PunchListResult, Severity, Trade } from '../types'
 
 type Source =
@@ -155,7 +156,7 @@ export default function QuickAnalyze() {
             </button>
           </div>
 
-          <div className="table-scroll">
+          <div className="table-scroll table-scroll-desktop-only">
             <table>
               <thead>
                 <tr>
@@ -187,6 +188,27 @@ export default function QuickAnalyze() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="item-cards">
+            {filtered.map((it) => (
+              <div key={it.id} className="item-card">
+                <div className="item-card-head">
+                  <SeverityBadge severity={it.severity} />
+                  <span className="trade">{it.trade}</span>
+                </div>
+                <strong className="item-card-title">{it.title}</strong>
+                <p className="item-card-desc">{it.description}</p>
+                <div className="item-card-row">
+                  <span className="item-card-label">Location</span>
+                  <span>{it.location_in_photo}</span>
+                </div>
+                <div className="item-card-row">
+                  <span className="item-card-label">Action</span>
+                  <span>{it.recommended_action}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}

@@ -751,6 +751,69 @@ td.num {
   display: block;
 }
 
+/* Mobile card view for ItemsTable — hidden on desktop, where the table
+   (with its own .table-scroll fallback) already reads fine. A 6-column
+   table forced to a 640px min-width just to stay legible means a phone
+   scrolls sideways to see severity/action/photos at all; stacking one
+   item per card needs no horizontal scroll and no data hidden by default. */
+.item-cards {
+  display: none;
+}
+
+/* Vision page's VLM-vs-detector comparison table, mobile equivalent: two
+   stacked profile cards (one per approach) instead of a matrix too wide
+   for a phone — each row becomes a labeled attribute inside its card. */
+.compare-cards {
+  display: none;
+}
+
+.item-card {
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.item-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.item-card-title {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.item-card-desc {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+
+.item-card-row {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.item-card-label {
+  color: var(--ink-faint);
+  font-weight: 600;
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.item-card .photo-thumbs,
+.item-card .code-refs {
+  margin-top: 10px;
+}
+
 .lightbox-backdrop {
   position: fixed;
   inset: 0;
@@ -1892,5 +1955,18 @@ footer a {
   }
   .hero-title {
     font-size: 22px;
+  }
+  .table-scroll-desktop-only {
+    display: none;
+  }
+  .item-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .compare-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }

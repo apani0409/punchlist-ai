@@ -1,7 +1,40 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { detectFrame, preloadDetector, type Detection } from '../lib/detect'
 
 const DETECTION_COLOR = '#22d3ee' // deliberately not a severity color — this isn't a defect finding
+
+const PIPELINE_COMPARISON: { label: string; vlm: ReactNode; detector: string }[] = [
+  { label: 'Input', vlm: 'One discrete photo, uploaded when ready', detector: '15-30 frames per second, continuously' },
+  {
+    label: 'Where it runs',
+    vlm: (
+      <>
+        Cloud (Claude vision, via <code>/analyze</code>)
+      </>
+    ),
+    detector: 'The edge — in the browser here, or on-device in the field, no round trip',
+  },
+  { label: 'Latency & cost', vlm: 'Seconds, a per-call API cost', detector: 'Milliseconds, effectively free once the model is loaded' },
+  {
+    label: 'What it knows',
+    vlm: 'Open-ended — describes anything visible, in its own words',
+    detector: 'A fixed, pre-trained set of classes decided in advance',
+  },
+  { label: 'Training data needed', vlm: 'None — zero-shot', detector: 'Needed upfront, to define those fixed classes' },
+  {
+    label: 'What gets stored',
+    vlm: 'The full structured finding, cited back to its photo',
+    detector: 'Events and tracks, not raw frames — the video itself is never the record',
+  },
+]
+
+const AERIAL_TEST_RESULTS: { time: string; detected: string; confidence: string }[] = [
+  { time: '0:01', detected: '"boat" — nothing resembling one is in frame', confidence: '19%' },
+  { time: '0:03', detected: '"boat" again, same false read', confidence: '19%' },
+  { time: '0:05', detected: '"person"', confidence: '32%' },
+  { time: '0:08', detected: '"person"', confidence: '39%' },
+  { time: '0:11', detected: '"person," "person"', confidence: '56%, 20%' },
+]
 
 type LiveStatus = 'idle' | 'loading' | 'running' | 'error'
 type UploadStatus = 'idle' | 'loading' | 'done' | 'error'
@@ -258,7 +291,7 @@ export default function Vision() {
           The model swap is the easy part. What actually changes is how the data is handled end to
           end.
         </p>
-        <div className="table-scroll">
+        <div className="table-scroll table-scroll-desktop-only">
           <table>
             <thead>
               <tr>
@@ -268,38 +301,36 @@ export default function Vision() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Input</td>
-                <td>One discrete photo, uploaded when ready</td>
-                <td>15-30 frames per second, continuously</td>
-              </tr>
-              <tr>
-                <td>Where it runs</td>
-                <td>Cloud (Claude vision, via <code>/analyze</code>)</td>
-                <td>The edge — in the browser here, or on-device in the field, no round trip</td>
-              </tr>
-              <tr>
-                <td>Latency &amp; cost</td>
-                <td>Seconds, a per-call API cost</td>
-                <td>Milliseconds, effectively free once the model is loaded</td>
-              </tr>
-              <tr>
-                <td>What it knows</td>
-                <td>Open-ended — describes anything visible, in its own words</td>
-                <td>A fixed, pre-trained set of classes decided in advance</td>
-              </tr>
-              <tr>
-                <td>Training data needed</td>
-                <td>None — zero-shot</td>
-                <td>Needed upfront, to define those fixed classes</td>
-              </tr>
-              <tr>
-                <td>What gets stored</td>
-                <td>The full structured finding, cited back to its photo</td>
-                <td>Events and tracks, not raw frames — the video itself is never the record</td>
-              </tr>
+              {PIPELINE_COMPARISON.map((row) => (
+                <tr key={row.label}>
+                  <td>{row.label}</td>
+                  <td>{row.vlm}</td>
+                  <td>{row.detector}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="compare-cards">
+          <div className="item-card">
+            <strong className="item-card-title">Photo → VLM (this app's core)</strong>
+            {PIPELINE_COMPARISON.map((row) => (
+              <div key={row.label} className="item-card-row">
+                <span className="item-card-label">{row.label}</span>
+                <span>{row.vlm}</span>
+              </div>
+            ))}
+          </div>
+          <div className="item-card">
+            <strong className="item-card-title">Live feed → real-time detector</strong>
+            {PIPELINE_COMPARISON.map((row) => (
+              <div key={row.label} className="item-card-row">
+                <span className="item-card-label">{row.label}</span>
+                <span>{row.detector}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -323,7 +354,7 @@ export default function Vision() {
           run against the drone footage above — no retraining, all 80 COCO classes visible (not just
           "person"), five timestamps through the clip:
         </p>
-        <div className="table-scroll">
+        <div className="table-scroll table-scroll-desktop-only">
           <table>
             <thead>
               <tr>
@@ -333,33 +364,31 @@ export default function Vision() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>0:01</td>
-                <td>"boat" — nothing resembling one is in frame</td>
-                <td>19%</td>
-              </tr>
-              <tr>
-                <td>0:03</td>
-                <td>"boat" again, same false read</td>
-                <td>19%</td>
-              </tr>
-              <tr>
-                <td>0:05</td>
-                <td>"person"</td>
-                <td>32%</td>
-              </tr>
-              <tr>
-                <td>0:08</td>
-                <td>"person"</td>
-                <td>39%</td>
-              </tr>
-              <tr>
-                <td>0:11</td>
-                <td>"person," "person"</td>
-                <td>56%, 20%</td>
-              </tr>
+              {AERIAL_TEST_RESULTS.map((row) => (
+                <tr key={row.time}>
+                  <td>{row.time}</td>
+                  <td>{row.detected}</td>
+                  <td>{row.confidence}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="item-cards">
+          {AERIAL_TEST_RESULTS.map((row) => (
+            <div key={row.time} className="item-card">
+              <strong className="item-card-title">{row.time}</strong>
+              <div className="item-card-row">
+                <span className="item-card-label">Detected</span>
+                <span>{row.detected}</span>
+              </div>
+              <div className="item-card-row">
+                <span className="item-card-label">Confidence</span>
+                <span>{row.confidence}</span>
+              </div>
+            </div>
+          ))}
         </div>
         <p className="summary">
           Every read is either an outright wrong class or below the confidence this page treats as

@@ -60,7 +60,7 @@ export default function ItemsTable({
         </div>
       </div>
 
-      <div className="table-scroll">
+      <div className="table-scroll table-scroll-desktop-only">
         <table>
           <thead>
             <tr>
@@ -120,6 +120,54 @@ export default function ItemsTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="item-cards">
+        {filtered.map((it) => (
+          <div key={it.id} className="item-card">
+            <div className="item-card-head">
+              <SeverityBadge severity={it.severity} />
+              <span className="trade">{it.trade}</span>
+            </div>
+            <strong className="item-card-title">{it.title}</strong>
+            <p className="item-card-desc">{it.description}</p>
+            <div className="item-card-row">
+              <span className="item-card-label">Location</span>
+              <span>{it.location}</span>
+            </div>
+            <div className="item-card-row">
+              <span className="item-card-label">Action</span>
+              <span>{it.recommended_action}</span>
+            </div>
+            {it.codeRefs && it.codeRefs.length > 0 && projectId && (
+              <div className="code-refs">
+                {it.codeRefs.map((ref) => (
+                  <Link key={ref.section} to={`/project/${projectId}/codes`} className="code-ref-chip" title={ref.title}>
+                    {ref.section}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {it.sourcePhotoIds.length > 0 && (
+              <div className="photo-thumbs">
+                {it.sourcePhotoIds.map((pid) => {
+                  const photo = photosById.get(pid)
+                  if (!photo) return null
+                  return (
+                    <button
+                      key={pid}
+                      className="photo-thumb-btn"
+                      title={photo.label}
+                      onClick={() => setLightboxPhoto(photo)}
+                    >
+                      <BlobImage blob={photo.thumbBlob} alt={photo.label} className="photo-thumb-img" />
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {lightboxPhoto && <PhotoLightbox photo={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />}
