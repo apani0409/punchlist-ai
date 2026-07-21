@@ -172,6 +172,9 @@ export default function Project() {
             <Link to={`/project/${project.id}/twin`} className="pdf-btn">
               Digital twin →
             </Link>
+            <Link to={`/project/${project.id}/vision`} className="pdf-btn">
+              Vision →
+            </Link>
             <Link to={`/project/${project.id}/dashboard`} className="pdf-btn">
               Dashboard →
             </Link>

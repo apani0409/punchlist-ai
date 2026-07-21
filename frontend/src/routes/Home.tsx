@@ -43,6 +43,12 @@ const CAPABILITIES = [
     body: 'A 3D twin with severity-colored markers — schematic by default, or a real parsed IFC model.',
     to: `/project/${DEMO_PROJECT_ID}/twin`,
   },
+  {
+    icon: '👁️',
+    title: 'Vision',
+    body: 'When a VLM is the wrong tool: a real-time detector running live in your browser, not the cloud.',
+    to: `/project/${DEMO_PROJECT_ID}/vision`,
+  },
 ]
 
 export default function Home() {

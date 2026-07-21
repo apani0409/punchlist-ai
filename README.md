@@ -2,10 +2,10 @@
 
 **Construction site photos → a tracked, structured punch list — from one photo to a whole project.**
 
-Upload photos of a construction site and get back structured punch list items: each visible defect with its location, responsible trade, severity, and recommended action. v1 did this for a single photo; **v2** turned it into a small platform — batches of photos consolidated into one project, inspection rounds compared over time, an honest metrics dashboard, a schematic 3D digital twin, and three features aimed at a problem GCs describe wanting solved: turning raw, unstructured project communication into structured records without manual re-typing. **v3** (this branch) adds the two things still missing from that picture: a grounded search over real code/standard text, and a digital twin that can load an actual parsed BIM model instead of only a schematic placeholder.
+Upload photos of a construction site and get back structured punch list items: each visible defect with its location, responsible trade, severity, and recommended action. v1 did this for a single photo; **v2** turned it into a small platform — batches of photos consolidated into one project, inspection rounds compared over time, an honest metrics dashboard, a schematic 3D digital twin, and three features aimed at a problem GCs describe wanting solved: turning raw, unstructured project communication into structured records without manual re-typing. **v3** added the two things still missing from that picture: a grounded search over real code/standard text, and a digital twin that can load an actual parsed BIM model instead of only a schematic placeholder. **v4** (this branch) rounds out the twin (free-standing annotations, a 2D plan view) and adds a page most VLM-first projects avoid: a real, working real-time object detector, framed honestly as the complement to this app's core approach rather than a replacement for it.
 
 **Live demo (v1):** https://punchlist-ai-five.vercel.app *(three pre-analyzed sample photos, no API key needed)*
-**v2 / v3 previews:** the `v2` and `v3` branches each deploy their own Vercel preview automatically — the production URL above is untouched.
+**v2 / v3 / v4 previews:** the `v2`, `v3`, and `v4` branches each deploy their own Vercel preview automatically — the production URL above is untouched.
 
 ## Why I built this
 
@@ -40,7 +40,7 @@ N photos ──► /analyze (per photo) ──► /aggregate (consolidate, dedup
      round 2 photos ──► /analyze ──► /aggregate ──► /diff (closed / persistent / new)
                                               │
                                               ▼
-        dashboard (honest metrics + risk report) · digital twin (schematic or real IFC) · Ask (grounded Q&A)
+        dashboard (honest metrics + risk report) · digital twin (schematic/IFC, 3D/2D, annotations) · Ask (grounded Q&A) · Vision (real-time detector)
 
 email/text ──► /extract ──► editable RFI / change order / notice (Inbox)
 
@@ -74,6 +74,12 @@ A pre-seeded demo project ships with the app (three inspection rounds with real 
 - **Codes & standards search** (`POST /code-search`, `/project/:id/codes`) — the "ctrl-F with steroids" gap both industry testimonials above named directly: Telamont has it, civils.ai has it, v2 didn't. Clones the `/ask` pattern exactly (context-stuffed sections, forced tool call, `grounded`/citations shape) against a curated ~20-section subset of **29 CFR 1926** (OSHA construction safety, U.S. federal regulation — public domain). Every quoted clause was copied verbatim from osha.gov and spot-checked against the raw page HTML before inclusion — see [Codes corpus & demo BIM model](#codes-corpus--demo-bim-model) below. Two demo safety items (an exposed cable, a missing panel cover plate) carry real `codeRefs` that render as clickable chips in the punch list, linking straight to the matching answer.
 - **Real BIM/IFC import for the digital twin** — a Schematic ↔ BIM toggle on the twin swaps the procedural placeholder for an actual IFC model, **parsed entirely in the browser** with [`web-ifc`](https://github.com/ThatOpen/engine_web-ifc) (used directly, not the deprecated `web-ifc-three`). The existing marker system needed zero changes: markers are normalized against whichever model's bounding box is currently shown, so the same photo-location pins land sensibly on the schematic box *or* the real IFC geometry — proof that the twin's marker layer is agnostic to its geometry source, the same "swappable capture layer" idea already applied to photos vs. drone stills. Anyone can also upload their own `.ifc` file; it's parsed client-side, never uploaded anywhere.
 
+## v4: what's new
+
+- **Free-standing annotations on the twin.** Photo markers required a photo behind them; annotations don't — click anywhere on the model (3D or 2D) to drop a labeled, trade/severity-tagged pin, editable and deletable, stored in its own IndexedDB store (schema v2 → v3, additive). Rendered as a diamond so it's visually distinct from a photo marker at a glance, not just by color.
+- **A 2D plan view for the twin**, toggleable with 3D. A pure-SVG top-down projection of the same footprint — no three.js, so it never touches the twin's lazy 3D chunk — sharing the *exact same world coordinates* as the 3D view: a marker placed in one view lands at the identical position in the other (verified, not assumed).
+- **A working real-time object detector** (`/project/:id/vision`) — [YOLOX-Nano](https://github.com/Megvii-BaseDetection/YOLOX) (Apache-2.0) running entirely client-side via [onnxruntime-web](https://github.com/microsoft/onnxruntime), lazy-loaded behind a "Run detection" click. Not a slide about real-time CV — an actual detector drawing actual boxes, frame by frame, on a bundled clip or a photo you upload, with the honest framing of *why* this needed a different model and a different data pipeline than the VLM everywhere else in this app. See [Vision demo: model & video credits](#vision-demo-model--video-credits) and the caveats in Limitations.
+
 ## Where this sits in the construction-AI landscape
 
 A useful way to think about AI in civil engineering is four phases: **Predict** (classical ML on tabular data), **Perceive** (computer vision on images/point clouds), **Generate** (LLMs synthesizing structured output from unstructured input), and **Reason & Act** (autonomous agents). Here's what PunchList AI actually does in that frame, and what's deliberately left as roadmap:
@@ -87,13 +93,15 @@ A useful way to think about AI in civil engineering is four phases: **Predict** 
 
 **The drone-ready angle.** The capture layer is designed to be swappable: `Photo.source` is already typed as `'upload' | 'drone'`, and inspection rounds already map cleanly onto periodic drone flights. Swapping manual photo uploads for stills pulled from a drone flight wouldn't touch the analysis, aggregation, or tracking pipeline — only the capture step changes. v3 applies the identical idea one layer down, to the twin's *geometry*: the same marker system now works against a procedural placeholder or a real parsed IFC model, so a project's own BIM model (or a future photogrammetric reconstruction) is a drop-in replacement, not a rewrite. What's still genuinely roadmap: turning drone flights into aerial %-complete-per-building overlays needs photogrammetry, 3D reconstruction, and a **scan-vs-BIM comparison** (what's built vs. what the model says should be built) — a fundamentally larger system than this one, named here as the honest next step rather than simulated.
 
+**Filling the Perceive roadmap gap, honestly.** The table's Perceive row names "real-time video/CCTV monitoring" as roadmap — v4's [Vision page](frontend/src/routes/Vision.tsx) is that gap, filled narrowly rather than glossed over. It doesn't touch the VLM path at all: `/analyze` still does the open-ended defect-finding job on discrete photos, zero-shot. The real-time detector is a genuinely different tool for a genuinely different shape of problem — a live feed can't call a cloud model 15-30 times a second, so inference has to run at the edge, against a small, fixed set of classes decided in advance, storing events/tracks rather than raw frames. This page only ever looks for "person" in a floor-level clip or an uploaded photo, framed explicitly as a safety-monitoring complement, never as a claim that a trained detector could do the VLM's open-ended defect-finding job.
+
 **Not built, and deliberately not faked:** an overall project budget or inventory/personnel tracking — this project has no real source of that data, and estimating it would repeat the exact SPI/CPI mistake described above. A live sync to Procore/ACC/Outlook and a voice-enabled field app are also out of scope for a demo, named here rather than mocked.
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, React Router, IndexedDB (`idb`), Three.js / React Three Fiber (lazy-loaded), `web-ifc` for client-side BIM parsing (lazy-loaded behind the twin's BIM toggle), jsPDF (lazy-loaded) |
+| Frontend | React 19, TypeScript, Vite, React Router, IndexedDB (`idb`), Three.js / React Three Fiber (lazy-loaded), `web-ifc` for client-side BIM parsing (lazy-loaded behind the twin's BIM toggle), `onnxruntime-web` for client-side object detection (lazy-loaded behind the Vision page's "Run detection"), jsPDF (lazy-loaded) |
 | Backend | Python, FastAPI, Anthropic SDK (tool use + vision) — a single stateless analysis service; all project state lives in the browser |
 | Deploy | Vercel (static frontend + Python serverless function) |
 
@@ -156,6 +164,12 @@ The gallery photos are CC0 / public-domain images from Wikimedia Commons ([crack
 
 **The demo BIM model** (`frontend/public/models/demo-building.ifc`) is **original content**, generated from scratch with [ifcopenshell](https://ifcopenshell.org) rather than sourced from a third-party sample file — see [`scripts/gen_demo_building_ifc.py`](scripts/gen_demo_building_ifc.py). A few well-known open IFC test models were considered first (buildingSMART's official sample-file repos, IfcOpenShell's own "IfcOpenHouse"); their licensing was either unclear or their hosting was Git-LFS-gated and inaccessible at the time. Generating an original file sidesteps the licensing question entirely and produces a small, real, parseable IFC4 model (two-storey main block + a wing, ~17 building elements) purpose-built to exercise the actual `web-ifc` parsing path.
 
+## Vision demo: model & video credits
+
+**The detection model** ([`frontend/public/models/yolox_nano.onnx`](frontend/public/models/yolox_nano.onnx)) is [YOLOX-Nano](https://github.com/Megvii-BaseDetection/YOLOX) from Megvii-BaseDetection's official release, **Apache-2.0** — chosen specifically to avoid Ultralytics' YOLOv8-v11, whose code *and* pretrained weights ship under **AGPL-3.0**, unshippable in an MIT-licensed portfolio repo. Pre/post-processing in [`frontend/src/lib/detect.ts`](frontend/src/lib/detect.ts) (letterbox padding, channel order, the anchor-free grid decode) was written against YOLOX's own reference implementation, verified line-by-line against the literal source rather than a paraphrase. Runs client-side via [onnxruntime-web](https://github.com/microsoft/onnxruntime).
+
+**The two videos** are both under the [Pexels License](https://www.pexels.com/license/) (free for commercial use, no attribution required, modification and bundling permitted) — credited here anyway, the same "verify and credit" discipline as the CC0 sample photos: the [aerial drone footage](https://www.pexels.com/video/drone-footage-of-construction-site-4457697/) by Murat Dayıoğlu is illustration only for the drone-capture-layer story, never run through detection; the [floor-level footage](https://www.pexels.com/video/workers-walking-in-construction-site-5434223/) by Everett Bumstead is what the live detector actually runs against.
+
 ## Limitations (honest ones)
 
 - No pixel-level localization — locations are textual descriptions by design.
@@ -165,6 +179,8 @@ The gallery photos are CC0 / public-domain images from Wikimedia Commons ([crack
 - `/ask`, `/code-search`, and `/risk-report` send their context (project data or code sections) on each call (no vector database) — fine at demo scale, but wouldn't scale to a very large project's full history, or a full code book, without real retrieval.
 - The codes corpus is a small curated subset (~20 sections of one regulation, 29 CFR 1926) picked to cover this demo's items, not a complete or current reference — always check the primary source for anything you'd actually rely on.
 - A demo, not an inspection or project-management tool: outputs need review by a qualified professional before being acted on.
+- The digital twin's 2D plan view always renders the schematic footprint as its reference, even when BIM (IFC) geometry is shown in 3D — the imported model doesn't retain per-floor/element-type metadata after parsing, only an overall shape, so there's no real per-floor outline to draw from it.
+- The Vision page's real-time detector is scoped to one class (person) on a bundled floor-level clip or an uploaded photo — a working demonstration of the real-time-detection *architecture and data pipeline*, not a general safety-monitoring product. It is never run against the aerial footage shown as illustration: off-the-shelf detectors are unreliable on aerial imagery without purpose-built retraining, and cleanly-licensed pretrained weights for that specific case were hard to source in the time available.
 
 ## License
 

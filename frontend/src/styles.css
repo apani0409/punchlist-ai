@@ -1744,6 +1744,65 @@ footer a {
   line-height: 1.5;
 }
 
+/* --- v4: Vision (real-time detection) --- */
+
+.vision-hero-video {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+}
+
+.vision-canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #000;
+}
+
+/* The decoded frame source — never shown directly, only drawn (with boxes
+   composited on top) into the visible canvas each detection pass. */
+.vision-source-video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vision-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.vision-upload-preview {
+  margin-top: 12px;
+  aspect-ratio: auto;
+  height: auto;
+}
+
+.vision-upload-preview .vision-canvas {
+  height: auto;
+}
+
+.vision-upload-label {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.vision-upload-input {
+  display: none;
+}
+
 /* Lets any table scroll horizontally within its own panel instead of
    forcing the whole page wider — the #1 mobile overflow source, since a
    6-column table can't wrap like the flex layouts around it. */

@@ -10,6 +10,7 @@ import Twin from './routes/Twin'
 import Inbox from './routes/Inbox'
 import Ask from './routes/Ask'
 import Codes from './routes/Codes'
+import Vision from './routes/Vision'
 import './styles.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="project/:projectId/inbox" element={<Inbox />} />
           <Route path="project/:projectId/ask" element={<Ask />} />
           <Route path="project/:projectId/codes" element={<Codes />} />
+          <Route path="project/:projectId/vision" element={<Vision />} />
         </Route>
       </Routes>
     </BrowserRouter>
