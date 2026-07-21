@@ -1555,6 +1555,153 @@ footer a {
   text-decoration: none;
 }
 
+/* --- v3: landing hero (Home.tsx) --- */
+
+.hero {
+  padding: 28px 26px;
+}
+
+.hero-title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.hero-subtitle {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+.hero-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.hero-cta-btn {
+  text-decoration: none;
+  display: inline-block;
+}
+
+.hero-cta-note {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+}
+
+.pipeline-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.pipeline-step {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.pipeline-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pipeline-step-icon {
+  font-size: 16px;
+}
+
+.pipeline-step-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.pipeline-step-body {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pipeline-arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: -18px;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  font-size: 16px;
+}
+
+@media (min-width: 900px) {
+  .pipeline-arrow {
+    display: block;
+  }
+}
+
+.capability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.capability-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--card-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.capability-card:hover {
+  border-color: var(--accent);
+}
+
+.capability-icon {
+  font-size: 20px;
+}
+
+.capability-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.capability-body {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Lets any table scroll horizontally within its own panel instead of
+   forcing the whole page wider — the #1 mobile overflow source, since a
+   6-column table can't wrap like the flex layouts around it. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll table {
+  min-width: 640px;
+}
+
 @media (max-width: 640px) {
   .results-head {
     flex-direction: column-reverse;
@@ -1562,5 +1709,29 @@ footer a {
   .thumb {
     width: 100%;
     height: 160px;
+  }
+}
+
+@media (max-width: 768px) {
+  .shell {
+    padding: 0 14px 40px;
+  }
+  .panel {
+    padding: 16px;
+  }
+  .brand h1 {
+    font-size: 20px;
+  }
+  .brand p {
+    display: none;
+  }
+  .header {
+    padding: 16px 0;
+  }
+  .hero {
+    padding: 20px 18px;
+  }
+  .hero-title {
+    font-size: 22px;
   }
 }

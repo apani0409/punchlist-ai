@@ -1,8 +1,49 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { deleteProject, listProjects, listRoundsByProject, putProject, putRound } from '../lib/db'
 import { ensureDemoProject } from '../lib/seed'
+import { DEMO_PROJECT_ID } from '../data/demoProject'
 import type { Project, Round } from '../types'
+
+const PIPELINE_STEPS = [
+  { icon: '📷', title: 'Capture', body: 'Photos, emails, texts — whatever the field already sends.' },
+  { icon: '🧩', title: 'Structure', body: 'A VLM and forced-schema tools turn it into a punch list, RFI, or change order.' },
+  { icon: '📈', title: 'Track', body: 'Every inspection round diffed against the last — closed, persistent, new.' },
+  { icon: '🗺️', title: 'Contextualize', body: 'A dashboard, a 3D twin, grounded Q&A, and code search tie it together.' },
+]
+
+const CAPABILITIES = [
+  {
+    icon: '🗂️',
+    title: 'Projects',
+    body: 'Batch photo upload, consolidated across a project, tracked across inspection rounds.',
+    to: `/project/${DEMO_PROJECT_ID}`,
+  },
+  {
+    icon: '📥',
+    title: 'Inbox',
+    body: 'Paste an email or text — get back an editable RFI, change order, or notice.',
+    to: `/project/${DEMO_PROJECT_ID}/inbox`,
+  },
+  {
+    icon: '💬',
+    title: 'Ask',
+    body: "Grounded Q&A over the project's own data — cites sources, refuses rather than guesses.",
+    to: `/project/${DEMO_PROJECT_ID}/ask`,
+  },
+  {
+    icon: '📖',
+    title: 'Codes',
+    body: 'Grounded search over real regulation text — cites the exact section, quotes it verbatim.',
+    to: `/project/${DEMO_PROJECT_ID}/codes`,
+  },
+  {
+    icon: '🏢',
+    title: 'Digital twin',
+    body: 'A 3D twin with severity-colored markers — schematic by default, or a real parsed IFC model.',
+    to: `/project/${DEMO_PROJECT_ID}/twin`,
+  },
+]
 
 export default function Home() {
   const navigate = useNavigate()
@@ -59,6 +100,43 @@ export default function Home() {
 
   return (
     <div className="page">
+      <section className="panel hero">
+        <h2 className="hero-title">From one photo to a whole project</h2>
+        <p className="hero-subtitle">
+          A tracked, structured punch list — photos, emails, and texts turned into structured
+          records that cite their sources and never invent a figure.
+        </p>
+        <div className="hero-cta">
+          <Link to={`/project/${DEMO_PROJECT_ID}`} className="upload-btn hero-cta-btn">
+            Explore the demo project →
+          </Link>
+          <span className="hero-cta-note">No API key needed</span>
+        </div>
+
+        <div className="pipeline-flow">
+          {PIPELINE_STEPS.map((step, i) => (
+            <div className="pipeline-step" key={step.title}>
+              <div className="pipeline-step-head">
+                <span className="pipeline-step-icon">{step.icon}</span>
+                <span className="pipeline-step-title">{step.title}</span>
+              </div>
+              <p className="pipeline-step-body">{step.body}</p>
+              {i < PIPELINE_STEPS.length - 1 && <span className="pipeline-arrow">→</span>}
+            </div>
+          ))}
+        </div>
+
+        <div className="capability-grid">
+          {CAPABILITIES.map((c) => (
+            <Link className="capability-card" key={c.title} to={c.to}>
+              <span className="capability-icon">{c.icon}</span>
+              <span className="capability-title">{c.title}</span>
+              <span className="capability-body">{c.body}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="panel">
         <h2>Start a new project</h2>
         <p className="summary">

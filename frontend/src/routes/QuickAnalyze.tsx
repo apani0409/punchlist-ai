@@ -155,37 +155,39 @@ export default function QuickAnalyze() {
             </button>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Issue</th>
-                <th>Location in photo</th>
-                <th>Trade</th>
-                <th>Severity</th>
-                <th>Recommended action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((it) => (
-                <tr key={it.id}>
-                  <td className="num">{it.id}</td>
-                  <td>
-                    <strong>{it.title}</strong>
-                    <div className="desc">{it.description}</div>
-                  </td>
-                  <td>{it.location_in_photo}</td>
-                  <td>
-                    <span className="trade">{it.trade}</span>
-                  </td>
-                  <td>
-                    <span className={`sev sev-${it.severity}`}>{it.severity}</span>
-                  </td>
-                  <td>{it.recommended_action}</td>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Issue</th>
+                  <th>Location in photo</th>
+                  <th>Trade</th>
+                  <th>Severity</th>
+                  <th>Recommended action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((it) => (
+                  <tr key={it.id}>
+                    <td className="num">{it.id}</td>
+                    <td>
+                      <strong>{it.title}</strong>
+                      <div className="desc">{it.description}</div>
+                    </td>
+                    <td>{it.location_in_photo}</td>
+                    <td>
+                      <span className="trade">{it.trade}</span>
+                    </td>
+                    <td>
+                      <span className={`sev sev-${it.severity}`}>{it.severity}</span>
+                    </td>
+                    <td>{it.recommended_action}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
     </div>
