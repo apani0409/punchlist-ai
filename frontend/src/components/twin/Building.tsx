@@ -9,9 +9,10 @@ import {
   FOOTPRINT_CENTER_X,
   FOOTPRINT_SPAN_X,
   FOOTPRINT_SPAN_Z,
-  GRID_SPACING,
+  MAIN_COLUMNS,
   WING_CENTER_X,
   WING_CENTER_Z,
+  WING_COLUMNS,
   WING_DEPTH,
   WING_FLOORS,
   WING_WIDTH,
@@ -19,21 +20,6 @@ import {
 
 const COLUMN_RADIUS = 0.15
 const TOTAL_HEIGHT = BASEMENT_HEIGHT + BUILDING_HEIGHT
-
-function columnPositions(centerX: number, centerZ: number, width: number, depth: number): [number, number][] {
-  const positions: [number, number][] = []
-  const halfW = width / 2
-  const halfD = depth / 2
-  for (let x = centerX - halfW; x <= centerX + halfW + 0.01; x += GRID_SPACING) {
-    for (let z = centerZ - halfD; z <= centerZ + halfD + 0.01; z += GRID_SPACING) {
-      positions.push([x, z])
-    }
-  }
-  return positions
-}
-
-const MAIN_COLUMNS = columnPositions(0, 0, BUILDING_WIDTH, BUILDING_DEPTH)
-const WING_COLUMNS = columnPositions(WING_CENTER_X, WING_CENTER_Z, WING_WIDTH, WING_DEPTH)
 const WING_HEIGHT = FLOOR_HEIGHT * WING_FLOORS
 
 // A schematic, procedurally-generated building massing model — not a

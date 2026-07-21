@@ -14,6 +14,7 @@ import RoundTabs from '../components/RoundTabs'
 import SeverityBadge from '../components/SeverityBadge'
 import BlobImage from '../components/BlobImage'
 import PhotoLightbox from '../components/PhotoLightbox'
+import TwinPlan2D from '../components/twin/TwinPlan2D'
 import type {
   Annotation,
   ConsolidatedItem,
@@ -61,6 +62,7 @@ export default function Twin() {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d')
   const [geometrySource, setGeometrySource] = useState<'schematic' | 'ifc'>('schematic')
   const [ifcUrl, setIfcUrl] = useState<string | null>(null)
   const [ifcFileName, setIfcFileName] = useState<string | null>(null)
@@ -213,47 +215,66 @@ export default function Twin() {
       <section className="panel">
         <div className="twin-geometry-toggle">
           <div className="twin-geometry-buttons">
-            <button
-              className={`twin-geometry-btn ${geometrySource === 'schematic' ? 'active' : ''}`}
-              onClick={showSchematic}
-            >
-              Schematic
+            <button className={`twin-geometry-btn ${viewMode === '3d' ? 'active' : ''}`} onClick={() => setViewMode('3d')}>
+              3D
             </button>
-            <button className={`twin-geometry-btn ${geometrySource === 'ifc' ? 'active' : ''}`} onClick={showDemoIfc}>
-              BIM (IFC)
+            <button className={`twin-geometry-btn ${viewMode === '2d' ? 'active' : ''}`} onClick={() => setViewMode('2d')}>
+              2D plan
             </button>
-            <label className="twin-geometry-upload">
-              Upload .ifc…
-              <input
-                type="file"
-                accept=".ifc"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleIfcUpload(file)
-                  e.target.value = ''
-                }}
-              />
-            </label>
           </div>
-          {geometrySource === 'schematic' && (
-            <p className="summary twin-geometry-note">
-              Procedurally-generated massing model — a placeholder, not a survey-accurate building.
-            </p>
-          )}
-          {geometrySource === 'ifc' && ifcStatus === 'loading' && (
-            <p className="summary twin-geometry-note">Parsing {ifcFileName}…</p>
-          )}
-          {geometrySource === 'ifc' && ifcStatus === 'loaded' && (
-            <p className="summary twin-geometry-note">
-              Real IFC model parsed in your browser: {ifcFileName} ({ifcMeshCount} elements). Rescaled
-              to this footprint so existing markers still land on it — not a survey-accurate
-              registration.
-            </p>
-          )}
-          {geometrySource === 'ifc' && ifcStatus === 'error' && (
-            <p className="error twin-geometry-note">{ifcError}</p>
-          )}
         </div>
+
+        {viewMode === '3d' ? (
+          <div className="twin-geometry-toggle">
+            <div className="twin-geometry-buttons">
+              <button
+                className={`twin-geometry-btn ${geometrySource === 'schematic' ? 'active' : ''}`}
+                onClick={showSchematic}
+              >
+                Schematic
+              </button>
+              <button className={`twin-geometry-btn ${geometrySource === 'ifc' ? 'active' : ''}`} onClick={showDemoIfc}>
+                BIM (IFC)
+              </button>
+              <label className="twin-geometry-upload">
+                Upload .ifc…
+                <input
+                  type="file"
+                  accept=".ifc"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleIfcUpload(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+            {geometrySource === 'schematic' && (
+              <p className="summary twin-geometry-note">
+                Procedurally-generated massing model — a placeholder, not a survey-accurate building.
+              </p>
+            )}
+            {geometrySource === 'ifc' && ifcStatus === 'loading' && (
+              <p className="summary twin-geometry-note">Parsing {ifcFileName}…</p>
+            )}
+            {geometrySource === 'ifc' && ifcStatus === 'loaded' && (
+              <p className="summary twin-geometry-note">
+                Real IFC model parsed in your browser: {ifcFileName} ({ifcMeshCount} elements). Rescaled
+                to this footprint so existing markers still land on it — not a survey-accurate
+                registration.
+              </p>
+            )}
+            {geometrySource === 'ifc' && ifcStatus === 'error' && (
+              <p className="error twin-geometry-note">{ifcError}</p>
+            )}
+          </div>
+        ) : (
+          <p className="summary twin-geometry-note">
+            Plan view always uses the schematic footprint as its reference, even when BIM (IFC)
+            geometry is active in 3D — the imported model doesn't carry per-floor outline data, only
+            an overall shape. Markers are the same underlying positions in both views.
+          </p>
+        )}
       </section>
 
       <section className="panel twin-panel">
@@ -292,6 +313,25 @@ export default function Twin() {
         )}
 
         <div className="twin-canvas-wrap">
+          {viewMode === '2d' ? (
+            <TwinPlan2D
+              photos={photos}
+              items={items}
+              annotations={annotations}
+              selectedPhotoId={selectedPhoto?.id ?? null}
+              onSelectPhoto={(p) => {
+                setSelectedAnnotation(null)
+                setSelectedPhoto(p)
+              }}
+              selectedAnnotationId={selectedAnnotation?.id ?? null}
+              onSelectAnnotation={(a) => {
+                setSelectedPhoto(null)
+                setSelectedAnnotation(a)
+              }}
+              placing={!!placing}
+              onPlace={(p) => void handlePlace(p)}
+            />
+          ) : (
           <Suspense fallback={<p className="summary twin-loading">Loading 3D viewer…</p>}>
             <TwinCanvas
               photos={photos}
@@ -320,6 +360,7 @@ export default function Twin() {
               }}
             />
           </Suspense>
+          )}
         </div>
 
         <div className="chart-legend chart-legend-row twin-legend">

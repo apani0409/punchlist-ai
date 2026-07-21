@@ -999,6 +999,43 @@ td.num {
   padding: 20px;
 }
 
+/* --- v4: 2D plan view --- */
+
+.twin-plan-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.twin-plan-svg.twin-plan-placing {
+  cursor: crosshair;
+}
+
+.twin-plan-grid-line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.06;
+}
+
+.twin-plan-footprint {
+  fill: rgba(249, 115, 22, 0.05);
+  stroke: var(--accent);
+  stroke-width: 0.12;
+}
+
+.twin-plan-column {
+  fill: var(--ink-faint);
+}
+
+.twin-plan-marker {
+  cursor: pointer;
+}
+
+.twin-plan-ghost {
+  fill: #ffffff;
+  opacity: 0.5;
+}
+
 .twin-tooltip {
   background: var(--card-raised);
   border: 1px solid var(--line);

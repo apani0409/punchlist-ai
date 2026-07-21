@@ -28,3 +28,28 @@ export const FOOTPRINT_MAX_X = BUILDING_WIDTH / 2 + WING_WIDTH
 export const FOOTPRINT_CENTER_X = (FOOTPRINT_MIN_X + FOOTPRINT_MAX_X) / 2
 export const FOOTPRINT_SPAN_X = FOOTPRINT_MAX_X - FOOTPRINT_MIN_X
 export const FOOTPRINT_SPAN_Z = BUILDING_DEPTH // wing's Z range sits inside the main block's
+export const FOOTPRINT_MIN_Z = -FOOTPRINT_SPAN_Z / 2
+export const FOOTPRINT_MAX_Z = FOOTPRINT_SPAN_Z / 2
+
+// Column grid, shared by the 3D building massing (Building.tsx) and the 2D
+// plan view (TwinPlan2D.tsx) — kept here, not in either renderer, so the 2D
+// view never has to import three.js just to draw the same grid.
+export function columnPositions(
+  centerX: number,
+  centerZ: number,
+  width: number,
+  depth: number,
+): [number, number][] {
+  const positions: [number, number][] = []
+  const halfW = width / 2
+  const halfD = depth / 2
+  for (let x = centerX - halfW; x <= centerX + halfW + 0.01; x += GRID_SPACING) {
+    for (let z = centerZ - halfD; z <= centerZ + halfD + 0.01; z += GRID_SPACING) {
+      positions.push([x, z])
+    }
+  }
+  return positions
+}
+
+export const MAIN_COLUMNS = columnPositions(0, 0, BUILDING_WIDTH, BUILDING_DEPTH)
+export const WING_COLUMNS = columnPositions(WING_CENTER_X, WING_CENTER_Z, WING_WIDTH, WING_DEPTH)
