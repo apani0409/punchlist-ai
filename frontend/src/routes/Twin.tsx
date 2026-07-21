@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   deleteAnnotation,
+  getPhoto,
   getProject,
   listAnnotationsByRound,
   listItemsByRound,
@@ -10,10 +11,13 @@ import {
   putAnnotation,
   putPhoto,
 } from '../lib/db'
+import { retryPhoto, type AnalyzeProgress } from '../lib/analyze'
+import { processPhoto } from '../lib/images'
 import RoundTabs from '../components/RoundTabs'
 import SeverityBadge from '../components/SeverityBadge'
 import BlobImage from '../components/BlobImage'
 import PhotoLightbox from '../components/PhotoLightbox'
+import ApiKeyField, { useApiKey } from '../components/ApiKeyField'
 import TwinPlan2D from '../components/twin/TwinPlan2D'
 import type {
   Annotation,
@@ -38,7 +42,7 @@ const TRADE_OPTIONS: Trade[] = [
 ]
 const SEVERITY_OPTIONS: Severity[] = ['low', 'medium', 'high']
 
-type Placing = { kind: 'photo'; photoId: string } | { kind: 'annotation' }
+type Placing = { kind: 'photo'; photoId: string } | { kind: 'annotation' } | { kind: 'new-photo'; file: File }
 
 // Lazy-loaded so three.js / @react-three/* (~150KB gz) never touch the
 // initial bundle — only paid when a user actually opens the twin.
@@ -61,6 +65,7 @@ export default function Twin() {
   const [placing, setPlacing] = useState<Placing | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [apiKey, setApiKey] = useApiKey()
 
   const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d')
   const [geometrySource, setGeometrySource] = useState<'schematic' | 'ifc'>('schematic')
@@ -137,6 +142,27 @@ export default function Twin() {
       const updated: Photo = { ...photo, twin: point }
       await putPhoto(updated)
       setPhotos((prev) => prev.map((p) => (p.id === photo.id ? updated : p)))
+    } else if (placing.kind === 'new-photo') {
+      const { blob, thumbBlob, width, height } = await processPhoto(placing.file)
+      const photo: Photo = {
+        id: crypto.randomUUID(),
+        projectId: project.id,
+        roundId: activeRoundId,
+        label: placing.file.name.replace(/\.[^/.]+$/, '') || 'Photo',
+        source: 'upload',
+        blob,
+        thumbBlob,
+        width,
+        height,
+        createdAt: Date.now(),
+        status: 'pending',
+        twin: point,
+      }
+      await putPhoto(photo)
+      setPhotos((prev) => [...prev, photo])
+      setSelectedAnnotation(null)
+      setSelectedPhoto(photo)
+      if (apiKey.trim()) void analyzeNewPhoto(photo.id)
     } else {
       const annotation: Annotation = {
         id: crypto.randomUUID(),
@@ -154,6 +180,25 @@ export default function Twin() {
       setSelectedAnnotation(annotation)
     }
     setPlacing(null)
+  }
+
+  // Reuses the exact same single-photo analyze + reaggregate pipeline the
+  // Project page's batch upload uses (lib/analyze.ts) — a photo placed here
+  // goes through the identical /analyze -> /aggregate path, so it shows up
+  // in the punch list, dashboard, and diffs like any other photo, not a
+  // twin-only side channel.
+  async function analyzeNewPhoto(photoId: string) {
+    if (!apiKey.trim() || !activeRoundId) return
+    const onProgress = (p: AnalyzeProgress) => {
+      setPhotos((prev) => prev.map((ph) => (ph.id === p.photoId ? { ...ph, status: p.status, error: p.error } : ph)))
+    }
+    await retryPhoto(photoId, apiKey.trim(), onProgress)
+    const [freshItems, freshPhoto] = await Promise.all([listItemsByRound(activeRoundId), getPhoto(photoId)])
+    setItems(freshItems)
+    if (freshPhoto) {
+      setPhotos((prev) => prev.map((ph) => (ph.id === photoId ? freshPhoto : ph)))
+      setSelectedPhoto((prev) => (prev?.id === photoId ? freshPhoto : prev))
+    }
   }
 
   async function updateAnnotation(patch: Partial<Annotation>) {
@@ -290,8 +335,27 @@ export default function Twin() {
           >
             + Add annotation
           </button>
+          <label className={`pdf-btn vision-upload-label ${placing ? 'twin-toolbar-btn-disabled' : ''}`}>
+            + Add photo
+            <input
+              type="file"
+              accept="image/*"
+              className="vision-upload-input"
+              disabled={!!placing}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (!file) return
+                setSelectedPhoto(null)
+                setSelectedAnnotation(null)
+                setPlacing({ kind: 'new-photo', file })
+              }}
+            />
+          </label>
+          <ApiKeyField value={apiKey} onChange={setApiKey} />
           <p className="summary twin-toolbar-hint">
-            Drop a free-standing marker anywhere on the model — not tied to a photo.
+            Drop a note, or a new photo — analyzed through the same <code>/analyze</code> pipeline
+            as every other photo, so it joins the punch list too.
           </p>
         </div>
 
@@ -301,6 +365,10 @@ export default function Twin() {
               {placing.kind === 'photo' ? (
                 <>
                   Click anywhere on the model to place <strong>{placingPhoto?.label}</strong>.
+                </>
+              ) : placing.kind === 'new-photo' ? (
+                <>
+                  Click anywhere on the model to place <strong>{placing.file.name}</strong>.
                 </>
               ) : (
                 'Click anywhere on the model to drop the annotation.'
@@ -410,18 +478,46 @@ export default function Twin() {
           <div className="results-head">
             <div>
               <h2>{selectedPhoto.label}</h2>
-              {selectedItems.length === 0 ? (
-                <p className="summary">No open items at this photo.</p>
-              ) : (
-                <ul className="twin-item-list">
-                  {selectedItems.map((it) => (
-                    <li key={it.id}>
-                      <SeverityBadge severity={it.severity} />
-                      <span>{it.title}</span>
-                    </li>
-                  ))}
-                </ul>
+              {selectedPhoto.status === 'pending' && (
+                <>
+                  <p className="summary">
+                    {apiKey.trim()
+                      ? 'Not analyzed yet.'
+                      : 'Not analyzed yet — add an API key above, or run analysis from the punch list page.'}
+                  </p>
+                  {apiKey.trim() && (
+                    <button className="pdf-btn" onClick={() => void analyzeNewPhoto(selectedPhoto.id)}>
+                      Analyze
+                    </button>
+                  )}
+                </>
               )}
+              {selectedPhoto.status === 'analyzing' && <p className="summary">Analyzing…</p>}
+              {selectedPhoto.status === 'error' && (
+                <>
+                  <p className="error">{selectedPhoto.error}</p>
+                  <button
+                    className="pdf-btn"
+                    disabled={!apiKey.trim()}
+                    onClick={() => void analyzeNewPhoto(selectedPhoto.id)}
+                  >
+                    Retry
+                  </button>
+                </>
+              )}
+              {selectedPhoto.status === 'done' &&
+                (selectedItems.length === 0 ? (
+                  <p className="summary">No open items at this photo.</p>
+                ) : (
+                  <ul className="twin-item-list">
+                    {selectedItems.map((it) => (
+                      <li key={it.id}>
+                        <SeverityBadge severity={it.severity} />
+                        <span>{it.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
             </div>
             <button className="twin-selected-thumb-btn" onClick={() => setLightboxOpen(true)}>
               <BlobImage blob={selectedPhoto.thumbBlob} alt={selectedPhoto.label} className="thumb" />

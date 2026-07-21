@@ -987,6 +987,7 @@ td.num {
 }
 
 .twin-canvas-wrap {
+  position: relative;
   width: 100%;
   height: 480px;
   border-radius: 10px;
@@ -1000,6 +1001,45 @@ td.num {
 }
 
 /* --- v4: 2D plan view --- */
+
+.twin-plan-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.twin-plan-floor-row {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: calc(100% - 20px);
+}
+
+.twin-plan-floor-btn {
+  background: rgba(19, 28, 46, 0.85);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.twin-plan-floor-btn:hover {
+  color: var(--ink);
+}
+
+.twin-plan-floor-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
 
 .twin-plan-svg {
   width: 100%;
@@ -1053,6 +1093,12 @@ td.num {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.twin-toolbar-btn-disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
 }
 
 .twin-toolbar-hint {

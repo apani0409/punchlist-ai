@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   BUILDING_DEPTH,
   BUILDING_WIDTH,
+  FLOOR_LABELS,
   FOOTPRINT_MAX_X,
   FOOTPRINT_MAX_Z,
   FOOTPRINT_MIN_X,
@@ -12,6 +13,8 @@ import {
   WING_COLUMNS,
   WING_DEPTH,
   WING_WIDTH,
+  floorCenterY,
+  floorIndexOf,
 } from '../../lib/twinDimensions'
 import type { Annotation, ConsolidatedItem, Photo, Severity, TwinPosition } from '../../types'
 
@@ -76,16 +79,22 @@ export default function TwinPlan2D({
   onPlace: (point: TwinPosition) => void
 }) {
   const [ghost, setGhost] = useState<[number, number] | null>(null)
+  const [selectedFloor, setSelectedFloor] = useState<number | 'all'>('all')
 
   const placedPhotos = useMemo(
     () =>
       photos
         .filter((p): p is Photo & { twin: NonNullable<Photo['twin']> } => !!p.twin)
+        .filter((p) => selectedFloor === 'all' || floorIndexOf(p.twin.y) === selectedFloor)
         .map((photo) => ({
           photo,
           worst: worstSeverity(items.filter((it) => it.sourcePhotoIds.includes(photo.id))),
         })),
-    [photos, items],
+    [photos, items, selectedFloor],
+  )
+  const visibleAnnotations = useMemo(
+    () => annotations.filter((a) => selectedFloor === 'all' || floorIndexOf(a.position.y) === selectedFloor),
+    [annotations, selectedFloor],
   )
 
   function screenToWorld(e: React.MouseEvent<SVGSVGElement>): [number, number] {
@@ -103,7 +112,8 @@ export default function TwinPlan2D({
   function handleClick(e: React.MouseEvent<SVGSVGElement>) {
     if (!placing) return
     const [x, z] = screenToWorld(e)
-    onPlace({ x, y: 0, z })
+    const y = selectedFloor === 'all' ? 0 : floorCenterY(selectedFloor)
+    onPlace({ x, y, z })
   }
 
   const [mainX, mainY] = worldToPlan(-BUILDING_WIDTH / 2, -BUILDING_DEPTH / 2)
@@ -111,13 +121,31 @@ export default function TwinPlan2D({
   const ghostPlan = ghost ? worldToPlan(ghost[0], ghost[1]) : null
 
   return (
-    <svg
-      viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-      className={`twin-plan-svg ${placing ? 'twin-plan-placing' : ''}`}
-      onMouseMove={handleMove}
-      onMouseLeave={() => setGhost(null)}
-      onClick={handleClick}
-    >
+    <div className="twin-plan-wrap">
+      <div className="twin-plan-floor-row">
+        <button
+          className={`twin-plan-floor-btn ${selectedFloor === 'all' ? 'active' : ''}`}
+          onClick={() => setSelectedFloor('all')}
+        >
+          All
+        </button>
+        {FLOOR_LABELS.map((label, i) => (
+          <button
+            key={label}
+            className={`twin-plan-floor-btn ${selectedFloor === i ? 'active' : ''}`}
+            onClick={() => setSelectedFloor(i)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <svg
+        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        className={`twin-plan-svg ${placing ? 'twin-plan-placing' : ''}`}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setGhost(null)}
+        onClick={handleClick}
+      >
       <defs>
         <pattern id="twin-plan-grid" width={4} height={4} patternUnits="userSpaceOnUse">
           <path d="M 4 0 L 0 0 0 4" className="twin-plan-grid-line" />
@@ -156,7 +184,7 @@ export default function TwinPlan2D({
         )
       })}
 
-      {annotations.map((a) => {
+      {visibleAnnotations.map((a) => {
         const [px, pz] = worldToPlan(a.position.x, a.position.z)
         const selected = a.id === selectedAnnotationId
         const size = selected ? 1.1 : 0.85
@@ -185,6 +213,7 @@ export default function TwinPlan2D({
       {placing && ghostPlan && (
         <circle cx={ghostPlan[0]} cy={ghostPlan[1]} r={0.6} className="twin-plan-ghost" />
       )}
-    </svg>
+      </svg>
+    </div>
   )
 }

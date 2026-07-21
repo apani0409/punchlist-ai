@@ -53,3 +53,25 @@ export function columnPositions(
 
 export const MAIN_COLUMNS = columnPositions(0, 0, BUILDING_WIDTH, BUILDING_DEPTH)
 export const WING_COLUMNS = columnPositions(WING_CENTER_X, WING_CENTER_Z, WING_WIDTH, WING_DEPTH)
+
+// Floor/level buckets, used by the 2D plan view to filter markers by story
+// and to pick a placement height when a specific floor (not "All") is
+// selected. Index 0 is the basement; 1..FLOOR_COUNT are ground through the
+// top floor. Built from FLOOR_COUNT rather than hardcoded so it stays
+// correct if the massing model's floor count ever changes.
+export const FLOOR_LABELS = [
+  'Basement',
+  ...Array.from({ length: FLOOR_COUNT }, (_, i) => (i === 0 ? 'Ground' : `Level ${i + 1}`)),
+]
+
+export function floorIndexOf(y: number): number {
+  if (y < 0) return 0
+  const level = Math.min(Math.max(Math.floor(y / FLOOR_HEIGHT), 0), FLOOR_COUNT - 1)
+  return 1 + level
+}
+
+export function floorCenterY(index: number): number {
+  if (index === 0) return -BASEMENT_HEIGHT / 2
+  const level = index - 1
+  return level * FLOOR_HEIGHT + FLOOR_HEIGHT / 2
+}

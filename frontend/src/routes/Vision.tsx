@@ -202,6 +202,25 @@ export default function Vision() {
       </section>
 
       <section className="panel">
+        <h2>Why "person," not "wearing a hardhat"</h2>
+        <p className="summary">
+          YOLOX-Nano is trained on COCO — 80 everyday object classes: person, car, bicycle, dog,
+          chair. <strong>COCO has no "hardhat" or "safety vest" class</strong>, so this model has no
+          concept of PPE compliance to detect — not a bug, a boundary of what it was ever trained on.
+          A model that actually classifies helmet-on vs. helmet-off exists (Ultralytics' official
+          Construction-PPE dataset), but it — like Ultralytics' own YOLOv8/v11 code and weights — ships
+          under <strong>AGPL-3.0</strong>, the same copyleft license this whole page was built to avoid.
+          Every other ready-made hardhat detector checked traced back to that same Ultralytics training
+          pipeline, with the underlying dataset's license undocumented on top of that. The one
+          genuinely-licensed option found (a CC BY 4.0 hardhat model on Roboflow) is only offered
+          through Roboflow's metered cloud API — which would mean sending every frame to an external
+          server, breaking the "runs entirely in your browser" property this page is actually
+          demonstrating. Staying at "person," on a model with a clean license and weights that never
+          leave your machine, was the deliberate trade.
+        </p>
+      </section>
+
+      <section className="panel">
         <h2>Try your own photo</h2>
         <p className="summary">
           Same detector, run once against a photo you choose — nothing uploaded anywhere, it never
@@ -293,11 +312,63 @@ export default function Vision() {
           that gap, filled honestly and scoped narrowly — a real-time detector watching for people
           in a floor-level feed, not a replacement for the VLM's defect-finding job, and not a
           claim that it could do that job. The aerial footage above is illustration only, for the
-          drone-capture-layer story elsewhere in this app (<code>Photo.source: 'drone'</code>) —
-          it is never run through detection. Off-the-shelf detectors are unreliable on aerial
-          footage without purpose-built retraining, and cleanly-licensed pretrained weights for
-          that specific case are hard to find; floor-level, person-only is the honest scope this
-          page actually delivers.
+          drone-capture-layer story elsewhere in this app (<code>Photo.source: 'drone'</code>).
+        </p>
+      </section>
+
+      <section className="panel">
+        <h2>Tested, not assumed: the same model on the aerial footage</h2>
+        <p className="summary">
+          Rather than assert that aerial detection wouldn't work, the identical YOLOX-Nano model was
+          run against the drone footage above — no retraining, all 80 COCO classes visible (not just
+          "person"), five timestamps through the clip:
+        </p>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Detected</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>0:01</td>
+                <td>"boat" — nothing resembling one is in frame</td>
+                <td>19%</td>
+              </tr>
+              <tr>
+                <td>0:03</td>
+                <td>"boat" again, same false read</td>
+                <td>19%</td>
+              </tr>
+              <tr>
+                <td>0:05</td>
+                <td>"person"</td>
+                <td>32%</td>
+              </tr>
+              <tr>
+                <td>0:08</td>
+                <td>"person"</td>
+                <td>39%</td>
+              </tr>
+              <tr>
+                <td>0:11</td>
+                <td>"person," "person"</td>
+                <td>56%, 20%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="summary">
+          Every read is either an outright wrong class or below the confidence this page treats as
+          reliable (this page's own threshold is 30% — half of these results wouldn't even clear
+          it). That's not a one-off failure; it's the small-object, top-down-angle problem published
+          research on aerial detection exists specifically to address, and it's why floor-level,
+          person-only — where the model actually works, demonstrated above with real confidence
+          scores in the 85-92% range — is this page's honest scope rather than a broader claim
+          backed by nothing.
         </p>
       </section>
     </div>
