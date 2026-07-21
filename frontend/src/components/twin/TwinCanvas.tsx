@@ -10,7 +10,7 @@ import {
   FOOTPRINT_SPAN_X,
   FOOTPRINT_SPAN_Z,
 } from '../../lib/twinDimensions'
-import type { ConsolidatedItem, Photo, TwinPosition } from '../../types'
+import type { Annotation, ConsolidatedItem, Photo, TwinPosition } from '../../types'
 
 // web-ifc (~1MB+ of WASM-loading JS glue) is only fetched when a user
 // actually switches to the BIM geometry source — a second lazy boundary
@@ -23,8 +23,11 @@ const TARGET_Y = (BUILDING_HEIGHT - BASEMENT_HEIGHT) / 2
 export default function TwinCanvas({
   photos,
   items,
+  annotations,
   selectedPhotoId,
   onSelectPhoto,
+  selectedAnnotationId,
+  onSelectAnnotation,
   placing,
   onPlace,
   ifcUrl,
@@ -33,8 +36,11 @@ export default function TwinCanvas({
 }: {
   photos: Photo[]
   items: ConsolidatedItem[]
+  annotations: Annotation[]
   selectedPhotoId: string | null
   onSelectPhoto: (photo: Photo) => void
+  selectedAnnotationId: string | null
+  onSelectAnnotation: (annotation: Annotation) => void
   placing: boolean
   onPlace: (point: TwinPosition) => void
   ifcUrl: string | null
@@ -58,7 +64,15 @@ export default function TwinCanvas({
       ) : (
         <Building />
       )}
-      <Markers photos={photos} items={items} selectedPhotoId={selectedPhotoId} onSelectPhoto={onSelectPhoto} />
+      <Markers
+        photos={photos}
+        items={items}
+        annotations={annotations}
+        selectedPhotoId={selectedPhotoId}
+        onSelectPhoto={onSelectPhoto}
+        selectedAnnotationId={selectedAnnotationId}
+        onSelectAnnotation={onSelectAnnotation}
+      />
       {placing && <PlacementController onPlace={onPlace} />}
 
       <OrbitControls

@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '../types'
+import type { Annotation, ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '../types'
 
 interface PunchListDB extends DBSchema {
   projects: {
@@ -26,13 +26,18 @@ interface PunchListDB extends DBSchema {
     value: ProjectDocument
     indexes: { 'by-project': string }
   }
+  annotations: {
+    key: string
+    value: Annotation
+    indexes: { 'by-round': string; 'by-project': string }
+  }
 }
 
 let dbPromise: Promise<IDBPDatabase<PunchListDB>> | null = null
 
 export function getDB(): Promise<IDBPDatabase<PunchListDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<PunchListDB>('punchlist-ai', 2, {
+    dbPromise = openDB<PunchListDB>('punchlist-ai', 3, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           db.createObjectStore('projects', { keyPath: 'id' })
@@ -51,6 +56,11 @@ export function getDB(): Promise<IDBPDatabase<PunchListDB>> {
         if (oldVersion < 2) {
           const documents = db.createObjectStore('documents', { keyPath: 'id' })
           documents.createIndex('by-project', 'projectId')
+        }
+        if (oldVersion < 3) {
+          const annotations = db.createObjectStore('annotations', { keyPath: 'id' })
+          annotations.createIndex('by-round', 'roundId')
+          annotations.createIndex('by-project', 'projectId')
         }
       },
       blocking() {
@@ -84,17 +94,22 @@ export async function listProjects(): Promise<Project[]> {
 
 export async function deleteProject(id: string): Promise<void> {
   const db = await getDB()
-  const tx = db.transaction(['projects', 'rounds', 'photos', 'items', 'documents'], 'readwrite')
+  const tx = db.transaction(
+    ['projects', 'rounds', 'photos', 'items', 'documents', 'annotations'],
+    'readwrite',
+  )
   await tx.objectStore('projects').delete(id)
   const rounds = await tx.objectStore('rounds').index('by-project').getAll(id)
   const photos = await tx.objectStore('photos').index('by-project').getAll(id)
   const items = await tx.objectStore('items').index('by-project').getAll(id)
   const documents = await tx.objectStore('documents').index('by-project').getAll(id)
+  const annotations = await tx.objectStore('annotations').index('by-project').getAll(id)
   await Promise.all([
     ...rounds.map((r) => tx.objectStore('rounds').delete(r.id)),
     ...photos.map((p) => tx.objectStore('photos').delete(p.id)),
     ...items.map((i) => tx.objectStore('items').delete(i.id)),
     ...documents.map((d) => tx.objectStore('documents').delete(d.id)),
+    ...annotations.map((a) => tx.objectStore('annotations').delete(a.id)),
   ])
   await tx.done
 }
@@ -183,4 +198,22 @@ export async function listDocumentsByProject(projectId: string): Promise<Project
   const db = await getDB()
   const all = await db.getAllFromIndex('documents', 'by-project', projectId)
   return all.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+// --- annotations (free-standing twin markers, not tied to a photo) ---
+
+export async function putAnnotation(annotation: Annotation): Promise<void> {
+  const db = await getDB()
+  await db.put('annotations', annotation)
+}
+
+export async function deleteAnnotation(id: string): Promise<void> {
+  const db = await getDB()
+  await db.delete('annotations', id)
+}
+
+export async function listAnnotationsByRound(roundId: string): Promise<Annotation[]> {
+  const db = await getDB()
+  const all = await db.getAllFromIndex('annotations', 'by-round', roundId)
+  return all.sort((a, b) => a.createdAt - b.createdAt)
 }

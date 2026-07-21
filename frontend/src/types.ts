@@ -88,6 +88,22 @@ export interface Photo {
   twin?: TwinPosition // marker position on the 3D digital-twin model
 }
 
+// A free-standing marker on the digital twin — not tied to any photo.
+// Placed directly by clicking the model (3D) or the plan (2D); the two
+// views share the same world coordinates so a point placed in either one
+// lands in the same spot in the other.
+export interface Annotation {
+  id: string
+  projectId: string
+  roundId: string
+  label: string
+  note?: string
+  trade: Trade
+  severity: Severity
+  position: TwinPosition
+  createdAt: number
+}
+
 export interface ConsolidatedItem {
   id: string
   projectId: string

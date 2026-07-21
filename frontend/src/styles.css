@@ -1011,6 +1011,23 @@ td.num {
   transform: translateY(-140%);
 }
 
+.twin-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.twin-toolbar-hint {
+  margin: 0;
+}
+
+.twin-legend-swatch-annotation {
+  border-radius: 2px;
+  background: var(--ink-soft);
+  transform: rotate(45deg);
+}
+
 .twin-placing-hint {
   display: flex;
   align-items: center;

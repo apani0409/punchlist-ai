@@ -1,11 +1,19 @@
 import { DEMO_DATA, DEMO_PROJECT_ID } from '../data/demoProject'
 import { processPhoto } from './images'
-import { getDB, putDocument, putPhoto, putProject, putRound, replaceItemsForRound } from './db'
-import type { ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '../types'
+import {
+  getDB,
+  putAnnotation,
+  putDocument,
+  putPhoto,
+  putProject,
+  putRound,
+  replaceItemsForRound,
+} from './db'
+import type { Annotation, ConsolidatedItem, Photo, Project, ProjectDocument, Round } from '../types'
 
 // Bump when DEMO_DATA changes shape/content so returning users get the
 // refreshed seed instead of a stale one from an earlier version.
-const DEMO_VERSION = 7
+const DEMO_VERSION = 8
 
 export async function ensureDemoProject(): Promise<void> {
   const db = await getDB()
@@ -64,6 +72,16 @@ export async function ensureDemoProject(): Promise<void> {
       roundId: round.id,
     }))
     await replaceItemsForRound(round.id, items)
+
+    for (const a of roundData.annotations ?? []) {
+      const annotation: Annotation = {
+        ...a,
+        projectId: DEMO_PROJECT_ID,
+        roundId: round.id,
+        createdAt: now,
+      }
+      await putAnnotation(annotation)
+    }
   }
 
   for (const d of DEMO_DATA.documents) {
@@ -81,16 +99,18 @@ export async function ensureDemoProject(): Promise<void> {
 
 async function clearProjectData(projectId: string): Promise<void> {
   const db = await getDB()
-  const tx = db.transaction(['rounds', 'photos', 'items', 'documents'], 'readwrite')
+  const tx = db.transaction(['rounds', 'photos', 'items', 'documents', 'annotations'], 'readwrite')
   const rounds = await tx.objectStore('rounds').index('by-project').getAll(projectId)
   const photos = await tx.objectStore('photos').index('by-project').getAll(projectId)
   const items = await tx.objectStore('items').index('by-project').getAll(projectId)
   const documents = await tx.objectStore('documents').index('by-project').getAll(projectId)
+  const annotations = await tx.objectStore('annotations').index('by-project').getAll(projectId)
   await Promise.all([
     ...rounds.map((r) => tx.objectStore('rounds').delete(r.id)),
     ...photos.map((p) => tx.objectStore('photos').delete(p.id)),
     ...items.map((i) => tx.objectStore('items').delete(i.id)),
     ...documents.map((d) => tx.objectStore('documents').delete(d.id)),
+    ...annotations.map((a) => tx.objectStore('annotations').delete(a.id)),
   ])
   await tx.done
 }

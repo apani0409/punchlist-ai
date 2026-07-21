@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Html } from '@react-three/drei'
-import type { ConsolidatedItem, Photo, Severity } from '../../types'
+import type { Annotation, ConsolidatedItem, Photo, Severity } from '../../types'
 
 const SEVERITY_COLOR: Record<Severity, string> = {
   high: '#f87171',
@@ -12,13 +12,19 @@ const SEVERITY_ORDER: Record<Severity, number> = { high: 0, medium: 1, low: 2 }
 export default function Markers({
   photos,
   items,
+  annotations,
   selectedPhotoId,
   onSelectPhoto,
+  selectedAnnotationId,
+  onSelectAnnotation,
 }: {
   photos: Photo[]
   items: ConsolidatedItem[]
+  annotations: Annotation[]
   selectedPhotoId: string | null
   onSelectPhoto: (photo: Photo) => void
+  selectedAnnotationId: string | null
+  onSelectAnnotation: (annotation: Annotation) => void
 }) {
   // Photos sharing (near-)identical coordinates get a small vertical
   // stacking offset so their markers don't perfectly overlap.
@@ -45,6 +51,14 @@ export default function Markers({
           offsetIndex={offsetIndex}
           selected={photo.id === selectedPhotoId}
           onSelect={() => onSelectPhoto(photo)}
+        />
+      ))}
+      {annotations.map((annotation) => (
+        <AnnotationMarker
+          key={annotation.id}
+          annotation={annotation}
+          selected={annotation.id === selectedAnnotationId}
+          onSelect={() => onSelectAnnotation(annotation)}
         />
       ))}
     </group>
@@ -110,6 +124,59 @@ function Marker({
       {hovered && !selected && (
         <Html distanceFactor={12} style={{ pointerEvents: 'none' }} center>
           <div className="twin-tooltip">{photo.label}</div>
+        </Html>
+      )}
+    </group>
+  )
+}
+
+// Free-standing annotations render as an octahedron (diamond) rather than a
+// sphere — a deliberate shape difference from photo markers so the two
+// marker types stay visually distinguishable at a glance, not just by color.
+function AnnotationMarker({
+  annotation,
+  selected,
+  onSelect,
+}: {
+  annotation: Annotation
+  selected: boolean
+  onSelect: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const { x, y, z } = annotation.position
+
+  return (
+    <group position={[x, y + 0.4, z]}>
+      <mesh
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          setHovered(true)
+          document.body.style.cursor = 'pointer'
+        }}
+        onPointerOut={() => {
+          setHovered(false)
+          document.body.style.cursor = 'auto'
+        }}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect()
+        }}
+        rotation={[0, Math.PI / 4, 0]}
+        scale={selected || hovered ? 1.35 : 1}
+        renderOrder={10}
+      >
+        <octahedronGeometry args={[0.4, 0]} />
+        <meshStandardMaterial
+          color={SEVERITY_COLOR[annotation.severity]}
+          emissive={SEVERITY_COLOR[annotation.severity]}
+          emissiveIntensity={selected ? 0.9 : 0.35}
+          depthTest={false}
+          transparent
+        />
+      </mesh>
+      {(hovered || selected) && (
+        <Html distanceFactor={12} style={{ pointerEvents: 'none' }} center>
+          <div className="twin-tooltip">{annotation.label}</div>
         </Html>
       )}
     </group>

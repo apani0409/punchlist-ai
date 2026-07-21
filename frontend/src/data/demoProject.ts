@@ -2,6 +2,7 @@ import { SAMPLES } from './samples'
 import { BASEMENT_HEIGHT, BUILDING_WIDTH, FLOOR_HEIGHT, WING_CENTER_X, WING_CENTER_Z } from '../lib/twinDimensions'
 import type { AskResponse, RiskReportResponse } from '../api'
 import type {
+  Annotation,
   DocumentStatus,
   ExtractedDocument,
   PunchListResult,
@@ -47,6 +48,12 @@ export interface DemoItem {
   codeRefs?: { section: string; title: string }[]
 }
 
+// A free-standing marker, hand-authored (not photo-derived) so the
+// "Add annotation" flow is visible in the demo without the user placing
+// anything themselves. `id`/`label`/`note`/`trade`/`severity`/`position`
+// only — seed.ts fills in projectId/roundId/createdAt per round.
+export type DemoAnnotation = Pick<Annotation, 'id' | 'label' | 'note' | 'trade' | 'severity' | 'position'>
+
 export interface DemoRound {
   id: string
   index: number
@@ -56,6 +63,7 @@ export interface DemoRound {
   photos: DemoPhoto[]
   items: DemoItem[]
   diff?: RoundDiff
+  annotations?: DemoAnnotation[]
 }
 
 const [crackedWall, basementWiring, waterDamageCeiling] = SAMPLES
@@ -185,6 +193,18 @@ const round1: DemoRound = {
       toDemoItem('demo-r1', 'demo-water-damage-ceiling', waterDamageCeiling.label, it),
     ),
     ...leakyValveAnalysis.items.map((it) => toDemoItem('demo-r1', 'demo-leaky-valve', 'Kitchen sink supply valve', it)),
+  ],
+  annotations: [
+    {
+      id: 'demo-r1-annotation-shoring',
+      label: 'Verify shoring before demolition',
+      note:
+        'Adjacent to the retaining wall crack — confirm temporary shoring is in place before any ' +
+        'demolition work starts nearby, independent of the structural assessment of the crack itself.',
+      trade: 'safety',
+      severity: 'medium',
+      position: { x: TWIN_CRACKED_WALL.x + 1.5, y: 0, z: TWIN_CRACKED_WALL.z + 1.5 },
+    },
   ],
 }
 
@@ -747,6 +767,18 @@ const round3: DemoRound = {
       severity: 'low',
       recommended_action: 'Replace the saturated insulation batts before closing the cavity back up.',
       sourcePhotoIds: ['demo-r3-water-damage-ceiling'],
+    },
+  ],
+  annotations: [
+    {
+      id: 'demo-r3-annotation-repair-verified',
+      label: 'Structural repair verified',
+      note:
+        'Epoxy injection and carbon fiber reinforcement confirmed complete on-site; the shoring flagged ' +
+        'in Round 1 is no longer needed here.',
+      trade: 'concrete',
+      severity: 'low',
+      position: { x: TWIN_CRACKED_WALL.x - 1, y: 0, z: TWIN_CRACKED_WALL.z - 1 },
     },
   ],
   diff: {
