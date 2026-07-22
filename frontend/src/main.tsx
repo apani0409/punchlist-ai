@@ -11,6 +11,8 @@ import Inbox from './routes/Inbox'
 import Ask from './routes/Ask'
 import Codes from './routes/Codes'
 import Vision from './routes/Vision'
+import '@fontsource-variable/geist'
+import '@fontsource-variable/geist-mono'
 import './styles.css'
 
 createRoot(document.getElementById('root')!).render(
