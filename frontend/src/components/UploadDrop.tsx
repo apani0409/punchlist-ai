@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { ImagePlus } from 'lucide-react'
 
 export default function UploadDrop({
   onFiles,
@@ -33,6 +34,7 @@ export default function UploadDrop({
       role="button"
       tabIndex={0}
     >
+      <ImagePlus size={22} className="upload-drop-icon" strokeWidth={1.5} />
       <p>Drag &amp; drop photos here, or click to choose files</p>
       <span className="hint">JPEG, PNG or WebP · multiple files OK</span>
       <input

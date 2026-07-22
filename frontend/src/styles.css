@@ -650,10 +650,9 @@ td.num {
   border: none;
   background: transparent;
   color: var(--ink-faint);
-  font-size: 16px;
-  line-height: 1;
   border-radius: 50%;
   cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .project-delete-btn:hover {
@@ -694,12 +693,23 @@ td.num {
 
 .upload-drop {
   border: 2px dashed var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 28px 20px;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   margin-bottom: 16px;
+}
+
+.upload-drop-icon {
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+  transition: color 0.15s;
+}
+
+.upload-drop:hover .upload-drop-icon,
+.upload-drop.drag-over .upload-drop-icon {
+  color: var(--accent);
 }
 
 .upload-drop:hover,
@@ -710,7 +720,7 @@ td.num {
 
 .upload-drop.disabled {
   opacity: 0.5;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .upload-drop p {
@@ -1073,13 +1083,15 @@ td.num {
   right: -12px;
   width: 32px;
   height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: var(--card-raised);
   border: 1px solid var(--line);
   color: var(--ink);
-  font-size: 18px;
-  line-height: 1;
   cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .lightbox-close:hover {
@@ -1130,8 +1142,15 @@ td.num {
 }
 
 .stat-delta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11.5px;
   font-weight: 600;
+}
+
+.stat-delta svg {
+  flex-shrink: 0;
 }
 
 .stat-delta-good {
@@ -1921,10 +1940,18 @@ a.code-citation-card:hover {
 }
 
 .risk-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   color: var(--accent);
   font-size: 13px;
   font-weight: 600;
   margin: 0;
+}
+
+.risk-action svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 footer {

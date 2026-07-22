@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { riskReport, type RiskReportResponse } from '../api'
 import ApiKeyField, { useApiKey } from './ApiKeyField'
 import SeverityBadge from './SeverityBadge'
@@ -80,7 +81,10 @@ export default function RiskReportPanel({
                   <strong>{r.title}</strong>
                 </div>
                 <p className="risk-why">{r.why}</p>
-                <p className="risk-action">→ {r.recommended_action}</p>
+                <p className="risk-action">
+                  <ArrowRight size={13} />
+                  {r.recommended_action}
+                </p>
               </li>
             ))}
           </ol>

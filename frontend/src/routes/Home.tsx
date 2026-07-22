@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, BookText, Box, FolderKanban, Inbox, MessageSquareText, ScanEye } from 'lucide-react'
+import { ArrowRight, BookText, Box, FolderKanban, Inbox, MessageSquareText, ScanEye, Trash2 } from 'lucide-react'
 import { deleteProject, listProjects, listRoundsByProject, putProject, putRound } from '../lib/db'
 import { ensureDemoProject } from '../lib/seed'
 import { DEMO_PROJECT_ID } from '../data/demoProject'
@@ -175,7 +175,7 @@ export default function Home() {
                     void handleDelete(p.id, p.name)
                   }}
                 >
-                  ×
+                  <Trash2 size={14} />
                 </button>
               )}
             </div>

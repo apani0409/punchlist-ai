@@ -1,3 +1,5 @@
+import { TrendingDown, TrendingUp } from 'lucide-react'
+
 export default function StatCard({
   label,
   value,
@@ -30,7 +32,8 @@ export default function StatCard({
       <span className="stat-value">{value}</span>
       {hasDelta && !isFlat && (
         <span className={`stat-delta ${isGood ? 'stat-delta-good' : 'stat-delta-bad'}`}>
-          {isUp ? '▲' : '▼'} {formatDelta(Math.abs(delta!), deltaFormat)} vs previous round
+          {isUp ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+          {formatDelta(Math.abs(delta!), deltaFormat)} vs previous round
         </span>
       )}
       {hasDelta && isFlat && <span className="stat-delta stat-delta-flat">— no change</span>}
