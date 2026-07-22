@@ -384,10 +384,11 @@ textarea:focus-visible,
   min-width: 260px;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   background: var(--card-raised);
   color: var(--ink);
+  transition: border-color 0.15s;
 }
 
 .live-row input::placeholder {
@@ -408,19 +409,22 @@ button.upload-btn {
   font-size: 14px;
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
+  transition: background-color 0.15s, box-shadow 0.15s;
 }
 
 .upload-btn:hover {
   background: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .upload-btn.disabled,
 .upload-btn:disabled {
   opacity: 0.5;
-  cursor: wait;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .error {
@@ -488,10 +492,15 @@ button.upload-btn {
 .filters select {
   padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   background: var(--card-raised);
   color: var(--ink);
+  transition: border-color 0.15s;
+}
+
+.filters select:hover {
+  border-color: var(--ink-faint);
 }
 
 .count {
@@ -508,13 +517,21 @@ button.upload-btn {
   font-weight: 600;
   font-size: 13px;
   padding: 9px 18px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .pdf-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.pdf-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--line);
+  color: var(--ink-faint);
 }
 
 table {
@@ -554,7 +571,7 @@ td.num {
 .trade {
   background: var(--card-raised);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 3px 8px;
   font-size: 12px;
   font-weight: 600;
@@ -967,8 +984,9 @@ td.num {
 .item-card {
   background: var(--card-raised);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .item-card-head {
@@ -1081,11 +1099,12 @@ td.num {
 .stat-card {
   background: var(--card-raised);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card-high {
@@ -1694,6 +1713,7 @@ td.num {
   border-radius: 999px;
   cursor: pointer;
   text-align: left;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .ask-suggestion-btn:hover {
@@ -1769,9 +1789,11 @@ td.num {
   color: var(--accent);
   font-size: 11.5px;
   font-weight: 600;
+  font-family: var(--font-mono);
   padding: 3px 10px;
   border-radius: 999px;
   text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .ask-citation-chip:hover {
