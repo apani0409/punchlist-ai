@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
 import { searchCodes, type CodeCitation, type CodeSearchResponse } from '../api'
 import ApiKeyField, { useApiKey } from '../components/ApiKeyField'
 import { CODE_CORPUS, CODE_SUGGESTED_QUESTIONS } from '../data/codeCorpus'
@@ -13,7 +12,6 @@ interface ChatMessage {
 }
 
 export default function Codes() {
-  const { projectId } = useParams<{ projectId: string }>()
   const [question, setQuestion] = useState('')
   const [apiKey, setApiKey] = useApiKey()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -63,11 +61,6 @@ export default function Codes() {
               and quote it verbatim; ask something outside this subset and it says so instead of guessing.
             </p>
           </div>
-          {projectId && (
-            <Link to={`/project/${projectId}`} className="pdf-btn">
-              ← Punch list
-            </Link>
-          )}
         </div>
 
         <div className="ask-suggestions">

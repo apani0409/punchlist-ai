@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getProject, listItemsByRound, listRoundsByProject } from '../lib/db'
 import { computeProjectMetrics, type ProjectMetrics } from '../lib/metrics'
 import { DEMO_PROJECT_ID, DEMO_RISK_REPORT } from '../data/demoProject'
@@ -61,14 +61,6 @@ export default function Dashboard() {
               Metrics derived from the latest inspection round's punch list. No projections or
               synthetic figures.
             </p>
-          </div>
-          <div className="project-nav-links">
-            <Link to={`/project/${project.id}/twin`} className="pdf-btn">
-              Digital twin →
-            </Link>
-            <Link to={`/project/${project.id}`} className="pdf-btn">
-              ← Punch list
-            </Link>
           </div>
         </div>
 

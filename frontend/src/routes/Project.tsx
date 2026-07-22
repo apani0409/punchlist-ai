@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
   getProject,
   listItemsByRound,
@@ -158,26 +158,6 @@ export default function Project() {
           <div>
             <h2>{project.name}</h2>
             <p className="summary">{round.name}</p>
-          </div>
-          <div className="project-nav-links">
-            <Link to={`/project/${project.id}/ask`} className="pdf-btn">
-              Ask →
-            </Link>
-            <Link to={`/project/${project.id}/codes`} className="pdf-btn">
-              Codes →
-            </Link>
-            <Link to={`/project/${project.id}/inbox`} className="pdf-btn">
-              Inbox →
-            </Link>
-            <Link to={`/project/${project.id}/twin`} className="pdf-btn">
-              Digital twin →
-            </Link>
-            <Link to={`/project/${project.id}/vision`} className="pdf-btn">
-              Vision →
-            </Link>
-            <Link to={`/project/${project.id}/dashboard`} className="pdf-btn">
-              Dashboard →
-            </Link>
           </div>
         </div>
         <RoundTabs rounds={rounds} activeRoundId={activeRoundId} onSelect={(id) => void selectRound(id)} />

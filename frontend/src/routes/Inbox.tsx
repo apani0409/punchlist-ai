@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getProject, listDocumentsByProject, putDocument } from '../lib/db'
 import { extractDocument } from '../api'
 import ApiKeyField, { useApiKey } from '../components/ApiKeyField'
@@ -111,9 +111,6 @@ export default function Inbox() {
               cost and schedule figures stay blank when the message doesn't state them.
             </p>
           </div>
-          <Link to={`/project/${project.id}`} className="pdf-btn">
-            ← Punch list
-          </Link>
         </div>
 
         <textarea

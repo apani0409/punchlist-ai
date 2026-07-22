@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
   deleteAnnotation,
   getPhoto,
@@ -250,9 +250,6 @@ export default function Twin() {
               geometry underneath.
             </p>
           </div>
-          <Link to={`/project/${project.id}`} className="pdf-btn">
-            ← Punch list
-          </Link>
         </div>
         <RoundTabs rounds={rounds} activeRoundId={activeRoundId} onSelect={(id) => void selectRound(id)} />
       </section>

@@ -1,50 +1,44 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { ArrowRight, BookText, Box, FolderKanban, Inbox, MessageSquareText, ScanEye } from 'lucide-react'
 import { deleteProject, listProjects, listRoundsByProject, putProject, putRound } from '../lib/db'
 import { ensureDemoProject } from '../lib/seed'
 import { DEMO_PROJECT_ID } from '../data/demoProject'
 import type { Project, Round } from '../types'
 
-const PIPELINE_STEPS = [
-  { icon: '📷', title: 'Capture', body: 'Photos, emails, texts — whatever the field already sends.' },
-  { icon: '🧩', title: 'Structure', body: 'A VLM and forced-schema tools turn it into a punch list, RFI, or change order.' },
-  { icon: '📈', title: 'Track', body: 'Every inspection round diffed against the last — closed, persistent, new.' },
-  { icon: '🗺️', title: 'Contextualize', body: 'A dashboard, a 3D twin, grounded Q&A, and code search tie it together.' },
-]
-
 const CAPABILITIES = [
   {
-    icon: '🗂️',
+    icon: FolderKanban,
     title: 'Projects',
     body: 'Batch photo upload, consolidated across a project, tracked across inspection rounds.',
     to: `/project/${DEMO_PROJECT_ID}`,
   },
   {
-    icon: '📥',
+    icon: Inbox,
     title: 'Inbox',
     body: 'Paste an email or text — get back an editable RFI, change order, or notice.',
     to: `/project/${DEMO_PROJECT_ID}/inbox`,
   },
   {
-    icon: '💬',
+    icon: MessageSquareText,
     title: 'Ask',
     body: "Grounded Q&A over the project's own data — cites sources, refuses rather than guesses.",
     to: `/project/${DEMO_PROJECT_ID}/ask`,
   },
   {
-    icon: '📖',
+    icon: BookText,
     title: 'Codes',
     body: 'Grounded search over real regulation text — cites the exact section, quotes it verbatim.',
     to: `/project/${DEMO_PROJECT_ID}/codes`,
   },
   {
-    icon: '🏢',
+    icon: Box,
     title: 'Digital twin',
     body: 'A 3D twin with severity-colored markers — schematic by default, or a real parsed IFC model.',
     to: `/project/${DEMO_PROJECT_ID}/twin`,
   },
   {
-    icon: '👁️',
+    icon: ScanEye,
     title: 'Vision',
     body: 'When a VLM is the wrong tool: a real-time detector running live in your browser, not the cloud.',
     to: `/project/${DEMO_PROJECT_ID}/vision`,
@@ -114,28 +108,16 @@ export default function Home() {
         </p>
         <div className="hero-cta">
           <Link to={`/project/${DEMO_PROJECT_ID}`} className="upload-btn hero-cta-btn">
-            Explore the demo project →
+            Explore the demo project
+            <ArrowRight size={16} />
           </Link>
           <span className="hero-cta-note">No API key needed</span>
-        </div>
-
-        <div className="pipeline-flow">
-          {PIPELINE_STEPS.map((step, i) => (
-            <div className="pipeline-step" key={step.title}>
-              <div className="pipeline-step-head">
-                <span className="pipeline-step-icon">{step.icon}</span>
-                <span className="pipeline-step-title">{step.title}</span>
-              </div>
-              <p className="pipeline-step-body">{step.body}</p>
-              {i < PIPELINE_STEPS.length - 1 && <span className="pipeline-arrow">→</span>}
-            </div>
-          ))}
         </div>
 
         <div className="capability-grid">
           {CAPABILITIES.map((c) => (
             <Link className="capability-card" key={c.title} to={c.to}>
-              <span className="capability-icon">{c.icon}</span>
+              <c.icon className="capability-icon" size={20} strokeWidth={1.75} />
               <span className="capability-title">{c.title}</span>
               <span className="capability-body">{c.body}</span>
             </Link>

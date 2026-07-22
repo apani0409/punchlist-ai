@@ -141,9 +141,6 @@ export default function Ask() {
               used for every answer.
             </p>
           </div>
-          <Link to={`/project/${project.id}`} className="pdf-btn">
-            ← Punch list
-          </Link>
         </div>
 
         <div className="ask-suggestions">
