@@ -9,9 +9,9 @@ Upload photos of a construction site and get back structured punch list items: e
 
 ## Why I built this
 
-I recently applied to [Gaudi AI](https://heygaudi.ai), whose mission is bringing AI to the physical world through construction workflow automations — punch lists among them. After applying, I wanted to show rather than tell, so I built this working slice of that idea in a weekend: a vision language model turned into a practical construction tool. v2 extends that into a small platform, built the same way — fast, honestly, with the model doing what it's actually good at, informed by what people who actually run construction projects say they want.
+I built this in a weekend as a working slice of construction workflow automation: a vision language model turned into a practical construction tool. v2 extends that into a small platform, built the same way — fast, honestly, with the model doing what it's actually good at, informed by what people who actually run construction projects say they want.
 
-> **Not affiliated with Gaudi AI.** This is an independent demo inspired by the public description of their product space. It is not a substitute for professional inspection.
+> This is an independent demo. It is not a substitute for professional inspection.
 
 ## What prompted v2's direction
 
