@@ -125,9 +125,8 @@ export default function App() {
           <a href="https://github.com/apani0409" target="_blank" rel="noreferrer">
             Alessandro Pani
           </a>{' '}
-          with React, FastAPI and Claude (developed with Claude Code). Inspired by Gaudi AI's
-          public punch-list product description — independent demo, not affiliated. Not a
-          substitute for professional inspection.
+          with React, FastAPI and Claude (developed with Claude Code). Independent demo, not a substitute for
+          professional inspection.
         </footer>
       </div>
     </div>
